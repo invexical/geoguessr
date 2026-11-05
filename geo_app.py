@@ -13,7 +13,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
-config_json = json.dumps(config, ensure_ascii=False).replace("</", r"<\/")
 
 # Browser-side keys are visible to users. Restrict Google keys by HTTP referrer
 # and API; protect Firebase writes with firestore.rules.
@@ -37,6 +36,7 @@ config = {
     "googleMapsApiKey": google_maps_api_key,
     "firebase": firebase_config,
 }
+config_json = json.dumps(config, ensure_ascii=False).replace("</", r"<\/")
 
 html_path = ROOT / "game.html"
 
