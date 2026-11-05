@@ -1,43 +1,80 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
     function roomPath(roomId) {
       return /databases/$(database)/documents/rooms/$(roomId);
     }
+
+    function roomExists(roomId) {
+      return exists(roomPath(roomId));
+    }
+
+    function roomStatus(roomId) {
+      return get(roomPath(roomId)).data.status;
+    }
+
     function isHost(roomId) {
-      return request.auth != null
+      return signedIn()
+        && roomExists(roomId)
         && get(roomPath(roomId)).data.hostUid == request.auth.uid;
     }
+
+    function isLobby(roomId) {
+      return signedIn()
+        && roomExists(roomId)
+        && roomStatus(roomId) == 'lobby';
+    }
+
     function isMember(roomId) {
-      return request.auth != null
+      return signedIn()
         && exists(/databases/$(database)/documents/rooms/$(roomId)/players/$(request.auth.uid));
     }
 
     match /rooms/{roomId} {
-      // A room code allows a signed-in player to look up one room, but clients
-      // cannot list every room in the database.
-      allow get: if request.auth != null;
+      // Room codes are effectively invitation links. Users must be signed in
+      // anonymously before they can look up a room; listing all room codes is blocked.
+      allow get: if signedIn();
       allow list: if false;
-      allow create: if request.auth != null
+
+      allow create: if signedIn()
         && request.resource.data.hostUid == request.auth.uid
-        && request.resource.data.status == 'lobby';
-      allow update, delete: if isHost(roomId);
+        && request.resource.data.status == 'lobby'
+        && request.resource.data.totalRounds in [3, 5, 10]
+        && request.resource.data.durationSeconds in [45, 60, 90, 120];
+
+      allow update, delete: if signedIn() && resource.data.hostUid == request.auth.uid;
 
       match /players/{playerId} {
-        // Before joining, authenticated users may inspect the player list of a
-        // lobby so the app can enforce its 20-player limit.
-        allow read: if isMember(roomId) || isHost(roomId)
-          || (request.auth != null && get(roomPath(roomId)).data.status == 'lobby');
-        allow create: if request.auth != null
+        // During the lobby, an invited signed-in player can inspect the roster.
+        // After joining, room members and the host can continue reading it.
+        allow get, list: if signedIn() && (
+          isLobby(roomId) || isMember(roomId) || isHost(roomId)
+        );
+
+        allow create: if signedIn()
           && request.auth.uid == playerId
-          && get(roomPath(roomId)).data.status == 'lobby';
-        // A player may change their own name. Only the host may update scores.
+          && isLobby(roomId)
+          && request.resource.data.uid == playerId
+          && request.resource.data.score == 0
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'score', 'joinedAt'])
+          && request.resource.data.keys().hasAll(['uid', 'name', 'score', 'joinedAt']);
+
+        // Players can rejoin with the same anonymous Firebase UID without
+        // resetting their score or joinedAt timestamp. The host can update scores.
         allow update: if isHost(roomId)
-          || (request.auth != null
+          || (signedIn()
             && request.auth.uid == playerId
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']));
+            && isLobby(roomId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+            && request.resource.data.name is string
+            && request.resource.data.name.size() <= 18);
+
         allow delete: if isHost(roomId)
-          || (request.auth != null && request.auth.uid == playerId);
+          || (signedIn() && request.auth.uid == playerId);
       }
 
       match /rounds/{roundId} {
@@ -45,18 +82,26 @@ service cloud.firestore {
         allow create, update, delete: if isHost(roomId);
 
         match /answer/{answerId} {
-          // The answer coordinates are readable only by the room host until
-          // the host publishes the round results.
+          // The hidden answer is only visible to the host until scoring.
           allow read, write: if isHost(roomId);
         }
 
         match /guesses/{playerId} {
           allow read: if isMember(roomId) || isHost(roomId);
-          allow create, update: if request.auth != null
+          allow create: if signedIn()
             && request.auth.uid == playerId
-            && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(roundId)).data.status == 'playing';
+            && isMember(roomId)
+            && roomStatus(roomId) == 'playing'
+            && request.resource.data.keys().hasOnly(['lat', 'lng', 'guessedAt'])
+            && request.resource.data.lat is number
+            && request.resource.data.lng is number
+            && request.resource.data.lat >= -90
+            && request.resource.data.lat <= 90
+            && request.resource.data.lng >= -180
+            && request.resource.data.lng <= 180;
+          allow update: if false;
           allow delete: if isHost(roomId)
-            || (request.auth != null && request.auth.uid == playerId);
+            || (signedIn() && request.auth.uid == playerId);
         }
 
         match /results/{playerId} {
