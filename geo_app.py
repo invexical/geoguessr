@@ -12,8 +12,8 @@ st.set_page_config(
     page_icon="🌍",
     layout="wide",
     initial_sidebar_state="collapsed",
-    config_json = json.dumps(config, ensure_ascii=False).replace("</", r"<\/")
 )
+config_json = json.dumps(config, ensure_ascii=False).replace("</", r"<\/")
 
 # Browser-side keys are visible to users. Restrict Google keys by HTTP referrer
 # and API; protect Firebase writes with firestore.rules.
