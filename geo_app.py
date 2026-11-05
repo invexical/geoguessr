@@ -16,8 +16,8 @@ st.set_page_config(
 
 # Browser-side keys are visible to users. Restrict Google keys by HTTP referrer
 # and API; protect Firebase writes with firestore.rules.
-mapillary_token = str(st.secrets.get("MAPILLARY_ACCESS_TOKEN", ""))
-google_maps_api_key = str(st.secrets.get("GOOGLE_MAPS_API_KEY", ""))
+mapillary_token = str(st.secrets.get("MAPILLARY_ACCESS_TOKEN", "")).strip()
+google_maps_api_key = str(st.secrets.get("GOOGLE_MAPS_API_KEY", "")).strip()
 try:
     firebase_secrets = dict(st.secrets.get("firebase", {}))
 except Exception:
