@@ -622,33 +622,91 @@
       }
       throw new Error(`${lastApiMessage} Try again, or configure Google Street View for more reliable 360° coverage.`);
     }
+    function normalizeGoogleLatLng(value) {
+      // StreetViewLocation.latLng is optional in Google's response type. Also
+      // tolerate either a google.maps.LatLng instance or a plain {lat,lng} object.
+      if (!value) return null;
+      let literal = null;
+      try {
+        if (typeof value.toJSON === "function") literal = value.toJSON();
+      } catch (error) {
+        console.warn("Could not serialize Street View coordinates:", error);
+      }
+
+      const isNumeric = candidate => candidate !== null && candidate !== undefined && candidate !== "" && Number.isFinite(Number(candidate));
+      let lat = literal?.lat;
+      let lng = literal?.lng;
+      if (!isNumeric(lat)) {
+        try { lat = typeof value.lat === "function" ? value.lat() : value.lat; }
+        catch (_) { lat = undefined; }
+      }
+      if (!isNumeric(lng)) {
+        try { lng = typeof value.lng === "function" ? value.lng() : value.lng; }
+        catch (_) { lng = undefined; }
+      }
+
+      if (!isNumeric(lat) || !isNumeric(lng)) return null;
+      lat = Number(lat);
+      lng = Number(lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return null;
+      }
+      return {lat, lng};
+    }
+
     async function randomGoogleStreetViewImage() {
-      if (!googleMapsReady || !window.google?.maps) throw new Error("Google Maps is not ready. Check your Google Maps API key and enabled Maps JavaScript API.");
+      if (!googleMapsReady || !window.google?.maps) {
+        throw new Error("Google Maps is not ready. Check your Google Maps API key and enabled Maps JavaScript API.");
+      }
       if (!streetViewService) streetViewService = new google.maps.StreetViewService();
-      const shuffledAnchors = [...CITY_ANCHORS].sort(()=>Math.random()-.5);
-      for (let attempt=0; attempt<28; attempt++) {
-        const [anchorLat,anchorLng] = shuffledAnchors[attempt % shuffledAnchors.length];
+
+      const shuffledAnchors = [...CITY_ANCHORS].sort(() => Math.random() - 0.5);
+      let lastProblem = "Google did not return a usable panorama coordinate.";
+
+      for (let attempt = 0; attempt < 28; attempt++) {
+        const [anchorLat, anchorLng] = shuffledAnchors[attempt % shuffledAnchors.length];
         const spread = attempt < 18 ? 0.045 : 0.075;
         const sample = {
-          lat:anchorLat + (Math.random()-.5)*spread,
-          lng:anchorLng + (Math.random()-.5)*spread
+          lat: anchorLat + (Math.random() - 0.5) * spread,
+          lng: anchorLng + (Math.random() - 0.5) * spread
         };
-        const data = await new Promise(resolve => {
-          streetViewService.getPanorama({
-            location:sample,
-            radius:1000,
-            sources:attempt < 20 ? ["outdoor"] : ["default"],
-            preference:"nearest"
-          }, (panoramaData,status) => resolve(status === "OK" ? panoramaData : null));
-        });
-        const panoId = data?.location?.pano;
-        const latLng = data?.location?.latLng;
-        if (!panoId || !latLng || seenImageIds.has(String(panoId))) continue;
-        const point = typeof latLng.toJSON === "function" ? latLng.toJSON() : {lat:latLng.lat(),lng:latLng.lng()};
-        seenImageIds.add(String(panoId));
-        return {id:String(panoId),lat:Number(point.lat),lng:Number(point.lng),isPano:true};
+
+        try {
+          // The current Maps JavaScript API returns {data, ...} when using
+          // the Promise form of getPanorama(). The callback form is retained
+          // by Google, but using the Promise form avoids ambiguous callback data.
+          const response = await streetViewService.getPanorama({
+            location: sample,
+            radius: 1000,
+            sources: attempt < 20 ? ["outdoor"] : ["default"],
+            preference: "nearest"
+          });
+          const data = response?.data || response || null;
+          const location = data?.location || null;
+          const panoId = location?.pano;
+          const point = normalizeGoogleLatLng(location?.latLng);
+
+          if (!panoId) {
+            lastProblem = "Google found no panorama for a sampled location.";
+            continue;
+          }
+          if (!point) {
+            lastProblem = "Google found a panorama but did not return valid coordinates; trying another location.";
+            continue;
+          }
+          if (seenImageIds.has(String(panoId))) continue;
+
+          seenImageIds.add(String(panoId));
+          return {id: String(panoId), lat: point.lat, lng: point.lng, isPano: true};
+        } catch (error) {
+          lastProblem = error?.message || String(error);
+          console.warn(`Street View search attempt ${attempt + 1} failed:`, error);
+          // Retry transient/no-result failures at another sample point. If all
+          // samples fail, the final message will include the last diagnostic.
+          await pause(120 + Math.min(attempt, 5) * 80);
+        }
       }
-      throw new Error("Could not find a new Google Street View panorama near the sampled locations. Try another round.");
+      throw new Error(`Could not find a usable Google Street View panorama after 28 searches. ${lastProblem} Check Street View availability and your Google Maps billing/API restrictions.`);
     }
     async function randomGameLocation() {
       return USE_GOOGLE_MAPS ? randomGoogleStreetViewImage() : randomMapillaryImage();
@@ -724,25 +782,37 @@
     }
     async function startSoloRound() {
       soloRound += 1; soloResultVisible = false; soloGuess = null; currentGuess = null; currentTarget = null;
-      resetMapForRound();
-      $("roundPill").textContent = `ROUND ${soloRound} / ${soloRounds}`;
-      $("scorePill").textContent = `SCORE ${soloScore.toLocaleString()}`;
-      setGameStatus("Loading a location…");
-      $("guessBtn").disabled = true;
+      let stage = "preparing the guessing map";
       try {
+        resetMapForRound();
+        $("roundPill").textContent = `ROUND ${soloRound} / ${soloRounds}`;
+        $("scorePill").textContent = `SCORE ${soloScore.toLocaleString()}`;
+        setGameStatus("Loading a location…");
+        $("guessBtn").disabled = true;
+
+        stage = "searching for a Street View panorama";
         const image = await randomGameLocation();
-        currentTarget = {lat:image.lat,lng:image.lng,imageId:image.id};
+        if (!image || !image.id) throw new Error("The imagery provider returned no panorama ID.");
+        const lat = Number(image.lat);
+        const lng = Number(image.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          throw new Error("The imagery provider returned an invalid coordinate. The round was stopped before scoring could use it.");
+        }
+        currentTarget = {lat, lng, imageId:String(image.id)};
+
+        stage = "opening the Street View panorama";
         await loadStreetImage(image.id);
         soloDeadline = Date.now() + soloDuration*1000;
         setGameStatus("Find your location");
         updateTimer(soloDuration);
         startTicker();
       } catch (error) {
-        console.error(error);
+        console.error(`Solo round failed while ${stage}:`, error);
+        const message = `Could not start the round while ${stage}: ${error?.message || String(error)}`;
         setGameStatus("Could not load location");
-        notify(error.message || "Could not load imagery.",true);
+        notify(message, true);
         setScreen("home");
-        setHomeStatus(error.message || "Could not load imagery.",true);
+        setHomeStatus(message, true);
       }
     }
     async function finishSoloRound(timedOut=false) {
