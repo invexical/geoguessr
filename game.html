@@ -320,7 +320,7 @@
     function showSetupStatus() {
       const notes = [];
       if (!GOOGLE_MAPS_API_KEY && !MAPILLARY_TOKEN) notes.push("Add either GOOGLE_MAPS_API_KEY (Google Street View) or MAPILLARY_ACCESS_TOKEN (Mapillary) in Streamlit secrets.");
-      if (GOOGLE_MAPS_API_KEY && !googleMapsReady) notes.push("Google Maps is configured but has not loaded. Check the API key, enabled API, billing, and website restrictions.");
+      if (GOOGLE_MAPS_API_KEY && !googleMapsReady) notes.push("A Google Maps API key was detected, but the Maps JavaScript API has not initialized. Read the error message above and check the key restrictions, billing, and enabled API.");
       if (!firebaseConfigured) notes.push("Add the [firebase] settings in Streamlit secrets to enable multiplayer.");
       const provider = GOOGLE_MAPS_API_KEY ? "Google Street View + Google Maps" : "Mapillary street imagery + OpenStreetMap";
       if (!notes.length) notes.push(`Ready to play using ${provider}. Multiplayer uses anonymous Firebase sign-in.`);
@@ -330,28 +330,63 @@
     }
 
     async function loadGoogleMapsApi() {
-      if (window.google?.maps?.Map) return;
-      await new Promise((resolve,reject) => {
-        const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&v=weekly&loading=async`;
-        script.async = true;
-        script.defer = true;
-        script.onload = async () => {
-          if (!window.google?.maps?.importLibrary) {
-            reject(new Error("Google Maps loaded without importLibrary; check the API version and key."));
+      // Google documents the callback parameter for scripts loaded with
+      // loading=async. Do not use script.onload here: it can fire before the
+      // API has finished initializing, and importLibrary is not needed for
+      // the Map / StreetViewPanorama classes used in this application.
+      if (window.google?.maps?.Map && window.google?.maps?.StreetViewPanorama) return;
+      if (window.__crossroadsGoogleMapsPromise) return window.__crossroadsGoogleMapsPromise;
+
+      window.__crossroadsGoogleMapsPromise = new Promise((resolve,reject) => {
+        let settled = false;
+        const timeout = setTimeout(() => fail(new Error(
+          "Google Maps did not finish loading within 25 seconds. Check the browser network, API key restrictions, billing, and Maps JavaScript API enablement."
+        )), 25000);
+
+        const cleanup = () => {
+          clearTimeout(timeout);
+          try { delete window.__crossroadsGoogleMapsApiCallback; } catch (_) {}
+        };
+        const succeed = () => {
+          if (settled) return;
+          if (!window.google?.maps?.Map || !window.google?.maps?.StreetViewPanorama) {
+            fail(new Error("Google's callback ran, but the Maps and Street View classes were unavailable."));
             return;
           }
-          try {
-            await window.google.maps.importLibrary("maps");
-            await window.google.maps.importLibrary("streetView");
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
+          settled = true;
+          cleanup();
+          resolve();
         };
-        script.onerror = () => reject(new Error("The Google Maps JavaScript API script could not be downloaded."));
+        const fail = (error) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(error instanceof Error ? error : new Error(String(error)));
+        };
+
+        // The Maps JavaScript API calls this global after initialization.
+        window.__crossroadsGoogleMapsApiCallback = succeed;
+        window.gm_authFailure = () => fail(new Error(
+          "Google rejected this Maps API key. Check the key's website restrictions, API restrictions, project, and billing status."
+        ));
+
+        const script = document.createElement("script");
+        const params = new URLSearchParams({
+          key: GOOGLE_MAPS_API_KEY,
+          v: "weekly",
+          loading: "async",
+          callback: "__crossroadsGoogleMapsApiCallback"
+        });
+        script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = () => fail(new Error(
+          "The Google Maps JavaScript API script could not be downloaded. The school network or browser may be blocking maps.googleapis.com."
+        ));
         document.head.appendChild(script);
       });
+
+      return window.__crossroadsGoogleMapsPromise;
     }
 
     async function initializeFirebase() {
@@ -670,7 +705,15 @@
     }
 
     async function startSoloGame() {
-      if (!imageryReady()) { setHomeStatus("Configure a working street-imagery provider in Streamlit secrets first.",true); return; }
+      if (USE_GOOGLE_MAPS && !googleMapsReady) {
+        setHomeStatus("A Google Maps key was detected, but Google Maps did not finish loading. Check the detailed Google Maps error above and your API key restrictions.",true);
+        return;
+      }
+      if (!USE_GOOGLE_MAPS && !MAPILLARY_TOKEN) {
+        setHomeStatus("No street-imagery provider is configured. Add GOOGLE_MAPS_API_KEY or MAPILLARY_ACCESS_TOKEN to Streamlit secrets.",true);
+        return;
+      }
+      if (!imageryReady()) { setHomeStatus("The configured street-imagery provider is not ready yet. Refresh the page and check the setup status.",true); return; }
       getPlayerName();
       soloRounds = Number($("roundCount").value || 5);
       soloDuration = Number($("roundSeconds").value || 90);
