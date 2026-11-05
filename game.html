@@ -59,11 +59,17 @@
     .player-chip .score { color:var(--green);font-variant-numeric:tabular-nums;font-weight:800; }
     .game-topbar { display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px; }
     .game-meta { display:flex;gap:8px;align-items:center;flex-wrap:wrap; }
-    .game-layout { display:grid;grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr);gap:12px;height:650px;min-height:500px; }
-    .view-panel { min-width:0;position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#101914; }
+    .game-stage { position:relative;width:100%;height:clamp(500px,calc(100vh - 185px),900px);min-height:500px;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:#101914; }
+    .view-panel { position:absolute;inset:0;min-width:0;border:0;border-radius:0;overflow:hidden;background:#101914; }
     .panel-caption { position:absolute;top:12px;left:12px;z-index:500;background:rgba(10,18,13,.78);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;font-size:11px;color:#e6f2e9;font-weight:750;backdrop-filter:blur(8px);pointer-events:none; }
     #mly { width:100%;height:100%;min-height:500px; }
-    #guessMap { width:100%;height:100%;min-height:500px;background:#dbe4df; }
+    .map-dock { position:absolute;z-index:700;right:17px;bottom:17px;width:clamp(220px,23vw,310px);height:clamp(155px,21vh,230px);border:2px solid rgba(255,255,255,.88);border-radius:13px;overflow:hidden;background:#dbe4df;box-shadow:0 12px 38px rgba(0,0,0,.48);transition:width .20s ease,height .20s ease,border-radius .20s ease; }
+    .map-dock:hover,.map-dock:focus-within { width:min(440px,50vw);height:min(340px,50vh); }
+    .map-dock.engaged,.map-dock.locked { width:min(760px,72vw);height:min(650px,74vh);border-radius:15px; }
+    #guessMap { width:100%;height:100%;min-height:0;background:#dbe4df; }
+    .map-caption { position:absolute;z-index:900;top:9px;left:10px;padding:6px 9px;border-radius:7px;background:rgba(12,20,15,.82);color:white;font-size:10px;font-weight:800;letter-spacing:.08em;pointer-events:none; }
+    #mapExpandBtn { position:absolute;z-index:950;top:7px;right:7px;width:31px;height:31px;padding:0;border-radius:8px;border:1px solid rgba(255,255,255,.7);background:rgba(12,20,15,.86);color:#fff;font-size:19px;line-height:1; }
+    #mapExpandBtn:hover { background:#26392d; }
     .game-controls { display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding:13px 15px;border:1px solid var(--line);border-radius:13px;background:var(--panel); }
     .control-hint { color:var(--muted);font-size:12px; }
     .round-result { display:none;margin-top:12px;border:1px solid rgba(114,224,162,.35);border-radius:14px;background:linear-gradient(110deg,rgba(42,107,69,.26),rgba(25,35,29,.95));padding:16px; }
@@ -84,9 +90,11 @@
       body { padding:10px; }
       .home-grid { grid-template-columns:1fr; }
       .hero { min-height:300px; }
-      .game-layout { grid-template-columns:1fr;grid-template-rows:1fr 1fr;height:auto; }
-      .view-panel { height:430px; }
-      #mly,#guessMap { min-height:430px; }
+      .game-stage { height:calc(100vh - 230px);min-height:430px; }
+      .map-dock { width:190px;height:135px;right:9px;bottom:9px; }
+      .map-dock:hover,.map-dock:focus-within { width:min(360px,75vw);height:min(270px,48vh); }
+      .map-dock.engaged,.map-dock.locked { width:92vw;height:70vh;right:4vw;bottom:4vh; }
+      #mly { min-height:430px; }
       .game-topbar { align-items:flex-start; }
       .header-note { display:none; }
     }
@@ -94,8 +102,11 @@
       h1 { font-size:44px; }
       .card { padding:17px; }
       .field-row { grid-template-columns:1fr; }
-      .view-panel { height:360px; }
-      #mly,#guessMap { min-height:360px; }
+      .game-stage { height:calc(100vh - 245px);min-height:380px; }
+      .map-dock { width:155px;height:112px;right:7px;bottom:7px; }
+      .map-dock:hover,.map-dock:focus-within { width:78vw;height:42vh; }
+      .map-dock.engaged,.map-dock.locked { width:94vw;height:68vh;right:3vw;bottom:3vh; }
+      #mly { min-height:380px; }
       .game-controls { align-items:stretch; }
       .game-controls button { flex:1; }
       .control-hint { width:100%; }
@@ -171,9 +182,13 @@
         <span class="pill" id="gameStatusPill">Find your location</span>
       </div>
     </div>
-    <div class="game-layout">
+    <div class="game-stage" id="gameStage">
       <section class="view-panel"><div class="panel-caption">STREET-LEVEL VIEW</div><div id="mly"></div></section>
-      <section class="view-panel"><div class="panel-caption">MAKE YOUR GUESS</div><div id="guessMap"></div></section>
+      <section class="map-dock" id="mapDock" aria-label="Guess map">
+        <div class="map-caption">MAKE YOUR GUESS</div>
+        <button id="mapExpandBtn" title="Expand or pin map open" aria-label="Expand map">⤢</button>
+        <div id="guessMap"></div>
+      </section>
     </div>
     <div class="game-controls">
       <div class="control-hint" id="controlHint">Pan around the street view, then click the map to place your guess.</div>
@@ -209,6 +224,8 @@
 
     const CONFIG = __APP_CONFIG__;
     const MAPILLARY_TOKEN = CONFIG.mapillaryToken || "";
+    const GOOGLE_MAPS_API_KEY = CONFIG.googleMapsApiKey || "";
+    const USE_GOOGLE_MAPS = Boolean(GOOGLE_MAPS_API_KEY);
     const firebaseConfig = CONFIG.firebase || {};
     const firebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
 
@@ -220,6 +237,11 @@
     let marker = null;
     let resultLayers = [];
     let viewer = null;
+    let googlePanorama = null;
+    let googleMapsReady = false;
+    let streetViewService = null;
+    let mapExpandTimer = null;
+    let startingRoom = false;
     let currentScreen = "home";
     let toastTimer = null;
     let timerHandle = null;
@@ -291,15 +313,45 @@
       ["homeScreen","lobbyScreen","gameScreen","finishScreen"].forEach(id => $(id).classList.remove("active"));
       const id = ({home:"homeScreen",lobby:"lobbyScreen",game:"gameScreen",finish:"finishScreen"})[name];
       if (id) $(id).classList.add("active");
-      if (name === "game") setTimeout(() => { if (map) map.invalidateSize(); }, 150);
+      if (name === "game") {
+        [150, 450].forEach(ms => setTimeout(() => refreshMapSize(), ms));
+      }
     }
     function showSetupStatus() {
       const notes = [];
-      if (!MAPILLARY_TOKEN) notes.push("Add MAPILLARY_ACCESS_TOKEN to Streamlit secrets to enable street imagery.");
+      if (!GOOGLE_MAPS_API_KEY && !MAPILLARY_TOKEN) notes.push("Add either GOOGLE_MAPS_API_KEY (Google Street View) or MAPILLARY_ACCESS_TOKEN (Mapillary) in Streamlit secrets.");
+      if (GOOGLE_MAPS_API_KEY && !googleMapsReady) notes.push("Google Maps is configured but has not loaded. Check the API key, enabled API, billing, and website restrictions.");
       if (!firebaseConfigured) notes.push("Add the [firebase] settings in Streamlit secrets to enable multiplayer.");
-      $("setupNote").textContent = notes.length ? notes.join(" ") : "Ready to play. Multiplayer uses anonymous Firebase sign-in; no player account is required.";
-      $("createRoomBtn").disabled = !firebaseReady;
-      $("joinRoomBtn").disabled = !firebaseReady;
+      const provider = GOOGLE_MAPS_API_KEY ? "Google Street View + Google Maps" : "Mapillary street imagery + OpenStreetMap";
+      if (!notes.length) notes.push(`Ready to play using ${provider}. Multiplayer uses anonymous Firebase sign-in.`);
+      $("setupNote").textContent = notes.join(" ");
+      $("createRoomBtn").disabled = !firebaseReady || !imageryReady();
+      $("joinRoomBtn").disabled = !firebaseReady || !imageryReady();
+    }
+
+    async function loadGoogleMapsApi() {
+      if (window.google?.maps?.Map) return;
+      await new Promise((resolve,reject) => {
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&v=weekly&loading=async`;
+        script.async = true;
+        script.defer = true;
+        script.onload = async () => {
+          if (!window.google?.maps?.importLibrary) {
+            reject(new Error("Google Maps loaded without importLibrary; check the API version and key."));
+            return;
+          }
+          try {
+            await window.google.maps.importLibrary("maps");
+            await window.google.maps.importLibrary("streetView");
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        };
+        script.onerror = () => reject(new Error("The Google Maps JavaScript API script could not be downloaded."));
+        document.head.appendChild(script);
+      });
     }
 
     async function initializeFirebase() {
@@ -318,27 +370,100 @@
       showSetupStatus();
     }
 
+    function imageryReady() {
+      return USE_GOOGLE_MAPS ? googleMapsReady : Boolean(MAPILLARY_TOKEN);
+    }
+    function refreshMapSize() {
+      if (!map) return;
+      if (USE_GOOGLE_MAPS && window.google?.maps) {
+        window.google.maps.event.trigger(map, "resize");
+      } else if (map.invalidateSize) {
+        map.invalidateSize({pan:false});
+      }
+    }
+    function setGuessMapView(lat, lng, zoom) {
+      if (!map) return;
+      if (USE_GOOGLE_MAPS) {
+        map.setCenter({lat, lng});
+        map.setZoom(zoom);
+      } else {
+        map.setView([lat,lng],zoom);
+      }
+    }
+    function engageMapBriefly() {
+      const dock = $("mapDock");
+      if (!dock) return;
+      dock.classList.add("engaged");
+      clearTimeout(mapExpandTimer);
+      mapExpandTimer = setTimeout(() => {
+        if (!dock.classList.contains("locked") && !dock.matches(":hover")) dock.classList.remove("engaged");
+        refreshMapSize();
+      }, 1800);
+      setTimeout(refreshMapSize, 230);
+    }
     function ensureMap() {
       if (mapReady) return;
-      map = L.map("guessMap", {worldCopyJump:true, zoomControl:true, minZoom:2}).setView([20,0],2);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom:19,
-        attribution:"&copy; <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a>"
-      }).addTo(map);
-      map.on("click", event => {
-        if (!canSubmitGuess()) return;
-        currentGuess = {lat:event.latlng.lat, lng:event.latlng.lng};
-        if (marker) map.removeLayer(marker);
-        marker = L.marker([currentGuess.lat,currentGuess.lng]).addTo(map).bindPopup("Your guess");
-        $("guessBtn").disabled = false;
-        $("controlHint").textContent = "Pin placed. Press Make guess when you're ready.";
-      });
-      mapReady = true;
+      if (USE_GOOGLE_MAPS) {
+        if (!googleMapsReady || !window.google?.maps) throw new Error("Google Maps has not loaded. Check GOOGLE_MAPS_API_KEY, Maps JavaScript API, billing, and allowed website domains.");
+        map = new google.maps.Map($("guessMap"), {
+          center:{lat:20,lng:0}, zoom:2, mapTypeId:"roadmap",
+          streetViewControl:false, mapTypeControl:false, fullscreenControl:false,
+          clickableIcons:false, gestureHandling:"greedy"
+        });
+        map.addListener("click", event => {
+          if (!canSubmitGuess() || !event.latLng) return;
+          currentGuess = {lat:event.latLng.lat(),lng:event.latLng.lng()};
+          if (marker) marker.setMap(null);
+          marker = new google.maps.Marker({position:currentGuess,map,title:"Your guess"});
+          $("guessBtn").disabled = false;
+          $("controlHint").textContent = "Pin placed. Press Make guess when you're ready.";
+        });
+        map.addListener("dragstart", engageMapBriefly);
+        map.addListener("zoom_changed", engageMapBriefly);
+        mapReady = true;
+      } else {
+        map = L.map("guessMap", {worldCopyJump:true, zoomControl:true, minZoom:2}).setView([20,0],2);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom:19,
+          attribution:"&copy; <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a>"
+        }).addTo(map);
+        map.on("click", event => {
+          if (!canSubmitGuess()) return;
+          currentGuess = {lat:event.latlng.lat, lng:event.latlng.lng};
+          if (marker) map.removeLayer(marker);
+          marker = L.marker([currentGuess.lat,currentGuess.lng]).addTo(map).bindPopup("Your guess");
+          $("guessBtn").disabled = false;
+          $("controlHint").textContent = "Pin placed. Press Make guess when you're ready.";
+        });
+        map.on("dragstart", engageMapBriefly);
+        map.on("zoomstart", engageMapBriefly);
+        mapReady = true;
+      }
+      const dock = $("mapDock");
+      if (dock && !dock.dataset.bound) {
+        dock.dataset.bound = "1";
+        dock.addEventListener("pointerdown", engageMapBriefly);
+        dock.addEventListener("touchstart", engageMapBriefly, {passive:true});
+        dock.addEventListener("transitionend", refreshMapSize);
+        window.addEventListener("pointerup", () => {
+          clearTimeout(mapExpandTimer);
+          mapExpandTimer = setTimeout(() => {
+            if (!dock.classList.contains("locked") && !dock.matches(":hover")) dock.classList.remove("engaged");
+            refreshMapSize();
+          }, 1600);
+        });
+      }
+      refreshMapSize();
     }
     function clearMapLayers() {
       if (!map) return;
-      if (marker) { map.removeLayer(marker); marker = null; }
-      resultLayers.forEach(layer => map.removeLayer(layer));
+      if (USE_GOOGLE_MAPS) {
+        if (marker) { marker.setMap(null); marker = null; }
+        resultLayers.forEach(layer => layer.setMap(null));
+      } else {
+        if (marker) { map.removeLayer(marker); marker = null; }
+        resultLayers.forEach(layer => map.removeLayer(layer));
+      }
       resultLayers = [];
       currentGuess = null;
       $("guessBtn").disabled = true;
@@ -367,59 +492,146 @@
     function drawReveal(target, guessList=[]) {
       ensureMap();
       clearMapLayers();
-      const bounds = [];
-      const targetMarker = L.circleMarker([target.lat,target.lng], {radius:9,color:"#f4cf76",weight:3,fillColor:"#f4cf76",fillOpacity:.95}).addTo(map).bindPopup("Actual location");
-      resultLayers.push(targetMarker); bounds.push([target.lat,target.lng]);
-      guessList.forEach((g,i) => {
-        if (g.lat == null || g.lng == null) return;
-        const guessMarker = L.circleMarker([g.lat,g.lng], {radius:7,color:"#6aa9ff",weight:2,fillColor:"#6aa9ff",fillOpacity:.9}).addTo(map).bindPopup(escapeHtml(g.name || "Guess"));
-        const line = L.polyline([[g.lat,g.lng],[target.lat,target.lng]], {color:"#f4cf76",weight:2,dashArray:"6 7",opacity:.85}).addTo(map);
-        resultLayers.push(guessMarker,line); bounds.push([g.lat,g.lng]);
-      });
-      if (bounds.length > 1) map.fitBounds(bounds,{padding:[35,35],maxZoom:7});
-      else map.setView([target.lat,target.lng],6);
+      if (USE_GOOGLE_MAPS) {
+        const bounds = new google.maps.LatLngBounds();
+        const targetPosition = {lat:target.lat,lng:target.lng};
+        const targetMarker = new google.maps.Marker({
+          position:targetPosition,map,title:"Actual location",
+          icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:"#f4cf76",fillOpacity:1,strokeColor:"#243326",strokeWeight:2}
+        });
+        resultLayers.push(targetMarker); bounds.extend(targetPosition);
+        guessList.forEach(g => {
+          if (g.lat == null || g.lng == null) return;
+          const position = {lat:g.lat,lng:g.lng};
+          const guessMarker = new google.maps.Marker({position,map,title:g.name||"Guess"});
+          const line = new google.maps.Polyline({path:[position,targetPosition],map,strokeColor:"#f4cf76",strokeOpacity:.9,strokeWeight:2});
+          resultLayers.push(guessMarker,line); bounds.extend(position);
+        });
+        if (guessList.some(g=>g.lat!=null && g.lng!=null)) map.fitBounds(bounds,45);
+        else { map.setCenter(targetPosition); map.setZoom(6); }
+      } else {
+        const bounds = [];
+        const targetMarker = L.circleMarker([target.lat,target.lng], {radius:9,color:"#f4cf76",weight:3,fillColor:"#f4cf76",fillOpacity:.95}).addTo(map).bindPopup("Actual location");
+        resultLayers.push(targetMarker); bounds.push([target.lat,target.lng]);
+        guessList.forEach((g,i) => {
+          if (g.lat == null || g.lng == null) return;
+          const guessMarker = L.circleMarker([g.lat,g.lng], {radius:7,color:"#6aa9ff",weight:2,fillColor:"#6aa9ff",fillOpacity:.9}).addTo(map).bindPopup(escapeHtml(g.name || "Guess"));
+          const line = L.polyline([[g.lat,g.lng],[target.lat,target.lng]], {color:"#f4cf76",weight:2,dashArray:"6 7",opacity:.85}).addTo(map);
+          resultLayers.push(guessMarker,line); bounds.push([g.lat,g.lng]);
+        });
+        if (bounds.length > 1) map.fitBounds(bounds,{padding:[35,35],maxZoom:7});
+        else map.setView([target.lat,target.lng],6);
+      }
     }
     function addGuessMarker(lat,lng) {
       currentGuess = {lat,lng};
-      if (marker) map.removeLayer(marker);
-      marker = L.marker([lat,lng]).addTo(map).bindPopup("Your guess");
+      if (marker) {
+        if (USE_GOOGLE_MAPS) marker.setMap(null);
+        else map.removeLayer(marker);
+      }
+      if (USE_GOOGLE_MAPS) marker = new google.maps.Marker({position:{lat,lng},map,title:"Your guess"});
+      else marker = L.marker([lat,lng]).addTo(map).bindPopup("Your guess");
     }
 
+    const pause = ms => new Promise(resolve => setTimeout(resolve,ms));
     async function randomMapillaryImage() {
       if (!MAPILLARY_TOKEN) throw new Error("No Mapillary access token is configured. Add MAPILLARY_ACCESS_TOKEN in Streamlit secrets.");
-      // This first version samples from a broad set of urban areas with known
-      // street-imagery coverage. More regions can be added to this array later.
-      for (let attempt=0; attempt<22; attempt++) {
-        const [lat,lng] = CITY_ANCHORS[Math.floor(Math.random()*CITY_ANCHORS.length)];
-        const pad = attempt < 12 ? 0.018 : 0.045;
+      let lastApiMessage = "No images found in the sampled areas.";
+      // Mapillary's image endpoint can return HTTP 500 for dense or broad bounding boxes.
+      // Keep each box tiny, ask for few fields, and retry transient failures rather than aborting the round.
+      for (let attempt=0; attempt<24; attempt++) {
+        const [anchorLat,anchorLng] = CITY_ANCHORS[Math.floor(Math.random()*CITY_ANCHORS.length)];
+        const offset = attempt < 16 ? 0.018 : 0.04;
+        const lat = anchorLat + (Math.random()-.5)*offset;
+        const lng = anchorLng + (Math.random()-.5)*offset;
+        const pad = [0.0025,0.0035,0.0045,0.006][attempt % 4];
         const bbox = [lng-pad,lat-pad,lng+pad,lat+pad].join(",");
         const url = new URL("https://graph.mapillary.com/images");
         url.searchParams.set("access_token", MAPILLARY_TOKEN);
-        url.searchParams.set("fields", "id,geometry,computed_geometry,captured_at,compass_angle");
+        url.searchParams.set("fields", "id,geometry,is_pano");
         url.searchParams.set("bbox", bbox);
-        url.searchParams.set("limit", "100");
-        const response = await fetch(url.toString());
-        if (!response.ok) {
-          const body = await response.text();
-          throw new Error(`Mapillary API error (${response.status}): ${body.slice(0,180)}`);
-        }
-        const payload = await response.json();
-        const candidates = (payload.data || []).map(item => {
-          const geometry = item.geometry || item.computed_geometry;
-          const coords = geometry && geometry.coordinates;
-          if (!coords || coords.length < 2) return null;
-          return {id:String(item.id), lng:Number(coords[0]), lat:Number(coords[1]), capturedAt:item.captured_at || null};
-        }).filter(item => item && Number.isFinite(item.lat) && Number.isFinite(item.lng) && !seenImageIds.has(item.id));
-        if (candidates.length) {
-          const choice = candidates[Math.floor(Math.random()*candidates.length)];
-          seenImageIds.add(choice.id);
-          return choice;
+        url.searchParams.set("limit", "8");
+        // Prioritize true 360-degree captures for better free rotation.
+        if (attempt < 16) url.searchParams.set("is_pano", "true");
+        try {
+          const response = await fetch(url.toString(), {signal:AbortSignal.timeout(15000)});
+          if (!response.ok) {
+            const body = await response.text();
+            lastApiMessage = `Mapillary returned ${response.status}: ${body.slice(0,140)}`;
+            if ([429,500,502,503,504].includes(response.status)) {
+              await pause(180 + Math.min(attempt,5)*120);
+              continue;
+            }
+            throw new Error(lastApiMessage);
+          }
+          const payload = await response.json();
+          const candidates = (payload.data || []).map(item => {
+            const geometry = item.geometry || item.computed_geometry;
+            const coords = geometry && geometry.coordinates;
+            if (!coords || coords.length < 2) return null;
+            return {id:String(item.id),lng:Number(coords[0]),lat:Number(coords[1]),isPano:Boolean(item.is_pano)};
+          }).filter(item => item && Number.isFinite(item.lat) && Number.isFinite(item.lng) && !seenImageIds.has(item.id));
+          if (candidates.length) {
+            const choice = candidates[Math.floor(Math.random()*candidates.length)];
+            seenImageIds.add(choice.id);
+            return choice;
+          }
+        } catch (error) {
+          if (error.name === "AbortError" || error.name === "TimeoutError" || error instanceof TypeError) {
+            lastApiMessage = "Mapillary request timed out or could not connect.";
+            await pause(200 + Math.min(attempt,5)*100);
+            continue;
+          }
+          throw error;
         }
       }
-      throw new Error("No usable Mapillary images were found in the sampled areas. Check your token or try again.");
+      throw new Error(`${lastApiMessage} Try again, or configure Google Street View for more reliable 360° coverage.`);
     }
-
+    async function randomGoogleStreetViewImage() {
+      if (!googleMapsReady || !window.google?.maps) throw new Error("Google Maps is not ready. Check your Google Maps API key and enabled Maps JavaScript API.");
+      if (!streetViewService) streetViewService = new google.maps.StreetViewService();
+      const shuffledAnchors = [...CITY_ANCHORS].sort(()=>Math.random()-.5);
+      for (let attempt=0; attempt<28; attempt++) {
+        const [anchorLat,anchorLng] = shuffledAnchors[attempt % shuffledAnchors.length];
+        const spread = attempt < 18 ? 0.045 : 0.075;
+        const sample = {
+          lat:anchorLat + (Math.random()-.5)*spread,
+          lng:anchorLng + (Math.random()-.5)*spread
+        };
+        const data = await new Promise(resolve => {
+          streetViewService.getPanorama({
+            location:sample,
+            radius:1000,
+            sources:attempt < 20 ? ["outdoor"] : ["default"],
+            preference:"nearest"
+          }, (panoramaData,status) => resolve(status === "OK" ? panoramaData : null));
+        });
+        const panoId = data?.location?.pano;
+        const latLng = data?.location?.latLng;
+        if (!panoId || !latLng || seenImageIds.has(String(panoId))) continue;
+        const point = typeof latLng.toJSON === "function" ? latLng.toJSON() : {lat:latLng.lat(),lng:latLng.lng()};
+        seenImageIds.add(String(panoId));
+        return {id:String(panoId),lat:Number(point.lat),lng:Number(point.lng),isPano:true};
+      }
+      throw new Error("Could not find a new Google Street View panorama near the sampled locations. Try another round.");
+    }
+    async function randomGameLocation() {
+      return USE_GOOGLE_MAPS ? randomGoogleStreetViewImage() : randomMapillaryImage();
+    }
     async function loadStreetImage(imageId) {
+      if (USE_GOOGLE_MAPS) {
+        if (!googleMapsReady || !window.google?.maps) throw new Error("Google Maps has not loaded. Check the API key and billing setup.");
+        if (!googlePanorama) {
+          googlePanorama = new google.maps.StreetViewPanorama($("mly"), {
+            visible:true,panControl:true,zoomControl:true,linksControl:true,
+            addressControl:false,fullscreenControl:true,motionTracking:false,
+            enableCloseButton:false,clickToGoEnabled:true,scrollwheel:true
+          });
+        }
+        googlePanorama.setPano(String(imageId));
+        googlePanorama.setPov({heading:Math.random()*360,pitch:0});
+        return;
+      }
       ensureMap();
       if (!window.mapillary || !window.mapillary.Viewer) throw new Error("MapillaryJS did not load. Check whether the school network blocks unpkg.com.");
       if (!viewer) {
@@ -432,7 +644,7 @@
     function resetMapForRound() {
       ensureMap();
       clearMapLayers();
-      map.setView([20,0],2);
+      setGuessMapView(20,0,2);
       $("clearGuessBtn").disabled = false;
       $("roundResult").classList.remove("visible");
       $("guessBtn").disabled = true;
@@ -458,7 +670,7 @@
     }
 
     async function startSoloGame() {
-      if (!MAPILLARY_TOKEN) { setHomeStatus("Add a Mapillary access token in Streamlit secrets before starting a game.",true); return; }
+      if (!imageryReady()) { setHomeStatus("Configure a working street-imagery provider in Streamlit secrets first.",true); return; }
       getPlayerName();
       soloRounds = Number($("roundCount").value || 5);
       soloDuration = Number($("roundSeconds").value || 90);
@@ -475,7 +687,7 @@
       setGameStatus("Loading a location…");
       $("guessBtn").disabled = true;
       try {
-        const image = await randomMapillaryImage();
+        const image = await randomGameLocation();
         currentTarget = {lat:image.lat,lng:image.lng,imageId:image.id};
         await loadStreetImage(image.id);
         soloDeadline = Date.now() + soloDuration*1000;
@@ -537,7 +749,7 @@
     }
     async function createRoom() {
       if (!firebaseReady) { setHomeStatus("Multiplayer needs Firebase configured in Streamlit secrets.",true); return; }
-      if (!MAPILLARY_TOKEN) { setHomeStatus("Add a Mapillary token before creating a room.",true); return; }
+      if (!imageryReady()) { setHomeStatus("Configure a working street-imagery provider in Streamlit secrets first.",true); return; }
       setHomeStatus("Creating room…");
       const name = getPlayerName();
       const rounds = Number($("roundCount").value || 5);
@@ -568,9 +780,22 @@
         if (!snap.exists()) throw new Error("Room not found. Check the code and try again.");
         const data = snap.data();
         if (data.status !== "lobby") throw new Error("That game has already started.");
+        const playerRef = doc(ref,"players",uid);
+        const existingPlayer = await getDoc(playerRef);
+        if (existingPlayer.exists()) {
+          // Anonymous Firebase identities persist in a browser. Rejoining from
+          // the same browser must update only the permitted name field, not overwrite score.
+          await updateDoc(playerRef,{name:getPlayerName()});
+        } else {
+          await setDoc(playerRef,{uid,name:getPlayerName(),score:0,joinedAt:Date.now()});
+        }
+        // Read the roster only after this user is a room member, so Firestore
+        // rules do not have to expose the player collection to non-members.
         const playersSnap = await getDocs(collection(ref,"players"));
-        if (playersSnap.size >= 20) throw new Error("This room is full (20 players maximum).");
-        await setDoc(doc(ref,"players",uid),{uid,name:getPlayerName(),score:0,joinedAt:Date.now()});
+        if (playersSnap.size > 20) {
+          if (!existingPlayer.exists()) await deleteDoc(playerRef);
+          throw new Error("This room is full (20 players maximum).");
+        }
         enterRoom(code,"player");
       } catch (error) {
         console.error(error); setHomeStatus(error.message || "Could not join room.",true);
@@ -602,13 +827,20 @@
         }
         if (roomData.status === "playing" || roomData.status === "resolving") startTicker();
         else clearInterval(timerHandle);
-      }, error => { console.error(error); notify("Room connection lost: "+error.message,true); });
+      }, error => {
+        console.error("Room listener failed:",error);
+        notify("Room connection lost: " + error.message,true);
+      });
       unsubPlayers = onSnapshot(collection(roomRef,"players"), snap => {
         players = snap.docs.map(d=>({id:d.id,...d.data()}));
         renderRoom();
         if (roomData && roomData.status === "finished") renderFinishLeaderboard();
         maybeFinalizeWhenEveryoneGuessed();
-      }, error => console.error(error));
+      }, error => {
+        console.error("Player roster listener failed:",error);
+        $("lobbyStatus").textContent = "Could not load the player list: " + error.message;
+        notify("Firestore could not read the room's player list: " + error.message,true);
+      });
     }
     function attachRoundListeners(roundNo) {
       activeRoundNo = roundNo; processingRound = false; guesses = []; roundResults = [];
@@ -619,11 +851,11 @@
         guesses = snap.docs.map(d=>({uid:d.id,...d.data()}));
         renderRoom();
         maybeFinalizeWhenEveryoneGuessed();
-      }, error=>console.error(error));
+      }, error=>{console.error("Guesses listener failed:",error);notify("Could not read guesses: "+error.message,true);});
       unsubResults = onSnapshot(collection(roundRef,"results"), snap => {
         roundResults = snap.docs.map(d=>({uid:d.id,...d.data()}));
         if (roundResults.length) renderMultiplayerRoundResult();
-      }, error=>console.error(error));
+      }, error=>{console.error("Results listener failed:",error);notify("Could not read round results: "+error.message,true);});
     }
     function renderRoom() {
       if (!roomData) return;
@@ -632,8 +864,8 @@
       $("lobbyPlayers").innerHTML = sorted.map(p=>`<div class=\"player-chip\"><span>${escapeHtml(p.name || "Player")}${p.uid===roomData.hostUid?" <span class='muted small'>(host)</span>":""}</span><span class=\"score\">${Number(p.score||0).toLocaleString()}</span></div>`).join("") || "<div class='muted small'>Waiting for players…</div>";
       if (roomData.status === "lobby") {
         $("lobbyStatus").textContent = roomRole === "host" ? "Start when everyone has joined." : "Waiting for the host to start…";
-        $("startRoomBtn").disabled = players.length < 1;
-        $("startRoomBtn").textContent = "Start game";
+        $("startRoomBtn").disabled = startingRoom || players.length < 1 || roomRole !== "host";
+        $("startRoomBtn").textContent = startingRoom ? "Loading location…" : "Start game";
       }
       if (roomData.currentRound) {
         $("roundPill").textContent = `ROUND ${roomData.currentRound} / ${roomData.totalRounds}`;
@@ -653,21 +885,36 @@
       if (guesses.length >= players.length) finalizeMultiplayerRound();
     }
     async function startMultiplayerRound(roundNo) {
-      if (roomRole !== "host" || !roomRef || !roomData) return;
+      if (roomRole !== "host" || !roomRef || !roomData || startingRoom) return;
       if (roundNo > roomData.totalRounds) {
         await updateDoc(roomRef,{status:"finished"});
         return;
       }
+      startingRoom = true;
       $("startRoomBtn").disabled = true;
+      $("startRoomBtn").textContent = "Loading location…";
+      $("lobbyStatus").textContent = "Finding a street-level location…";
       setGameStatus("Choosing a location…");
       try {
-        const image = await randomMapillaryImage();
+        const image = await randomGameLocation();
         const rRef = doc(db,"rooms",roomCode,"rounds",String(roundNo));
+        const deadline = Date.now()+roomData.durationSeconds*1000;
+        // Create the round document first, then its protected answer subdocument.
+        await setDoc(rRef,{imageId:image.id,status:"preparing",startedAt:Date.now(),deadline,durationSeconds:roomData.durationSeconds});
         await setDoc(doc(rRef,"answer","secret"),{lat:image.lat,lng:image.lng,imageId:image.id});
-        await setDoc(rRef,{imageId:image.id,status:"playing",startedAt:Date.now(),deadline:Date.now()+roomData.durationSeconds*1000,durationSeconds:roomData.durationSeconds});
-        await updateDoc(roomRef,{currentRound:roundNo,status:"playing",startedAt:Date.now(),deadline:Date.now()+roomData.durationSeconds*1000});
+        await updateDoc(rRef,{status:"playing"});
+        await updateDoc(roomRef,{currentRound:roundNo,status:"playing",startedAt:Date.now(),deadline});
       } catch (error) {
-        console.error(error); notify(error.message || "Could not start round.",true); $("startRoomBtn").disabled = false;
+        console.error("Could not start multiplayer round:",error);
+        const message = error.code === "permission-denied" || /permission/i.test(error.message)
+          ? "Firestore denied a room-start write. Re-publish the updated firestore.rules file to the same Firebase project used by this app."
+          : (error.message || "Could not start round.");
+        notify(message,true);
+        $("lobbyStatus").textContent = message;
+        $("startRoomBtn").disabled = false;
+        $("startRoomBtn").textContent = "Try again";
+      } finally {
+        startingRoom = false;
       }
     }
     async function finalizeMultiplayerRound() {
@@ -757,12 +1004,24 @@
     $("createRoomBtn").addEventListener("click",createRoom);
     $("joinRoomBtn").addEventListener("click",joinRoom);
     $("roomCodeInput").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);});
-    $("startRoomBtn").addEventListener("click",()=>startMultiplayerRound(1));
+    $("startRoomBtn").addEventListener("click",()=>startMultiplayerRound(1).catch(error=>notify(error.message,true)));
     $("copyRoomCodeBtn").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(roomCode);notify("Room code copied.");}catch{notify("Room code: "+roomCode);}});
     $("leaveRoomBtn").addEventListener("click",leaveRoom);
+    $("mapExpandBtn").addEventListener("click",event=>{
+      event.stopPropagation();
+      const dock = $("mapDock");
+      dock.classList.toggle("locked");
+      if (dock.classList.contains("locked")) dock.classList.add("engaged");
+      else if (!dock.matches(":hover")) dock.classList.remove("engaged");
+      $("mapExpandBtn").textContent = dock.classList.contains("locked") ? "×" : "⤢";
+      setTimeout(refreshMapSize,230);
+    });
     $("clearGuessBtn").addEventListener("click",()=>{
       if (roomData && guesses.some(g=>g.uid===uid)) return;
-      if (marker && map) map.removeLayer(marker);
+      if (marker && map) {
+        if (USE_GOOGLE_MAPS) marker.setMap(null);
+        else map.removeLayer(marker);
+      }
       marker=null; currentGuess=null; $("guessBtn").disabled=true;
       $("controlHint").textContent="Pin cleared. Click the map to place a new guess.";
     });
@@ -778,6 +1037,15 @@
     if (savedName) $("playerName").value = savedName;
     showSetupStatus();
     await initializeFirebase();
+    if (GOOGLE_MAPS_API_KEY) {
+      try {
+        await loadGoogleMapsApi();
+        googleMapsReady = true;
+      } catch (error) {
+        console.error("Google Maps API failed to load:",error);
+        setHomeStatus("Google Maps failed to load. Check that Maps JavaScript API is enabled, billing is active, and the key allows this Streamlit domain. " + error.message,true);
+      }
+    }
     showSetupStatus();
   </script>
 </body>
