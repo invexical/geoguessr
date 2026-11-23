@@ -52,9 +52,9 @@ config = {
 
 # Keep this as a real static HTTPS document. Do NOT inline the HTML in st.iframe:
 # that creates an about:srcdoc document, which breaks Google HTTP-referrer restrictions.
-game_path = ROOT / "static" / "game.html"
+game_path = ROOT / "game.html"
 if not game_path.is_file():
-    st.error("static/game.html was not found. Keep the static folder beside this file.")
+    st.error("game.html was not found. Keep the static folder beside this file.")
     st.stop()
 
 config_json = json.dumps(config, ensure_ascii=False, separators=(",", ":"))
