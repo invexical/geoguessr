@@ -4,236 +4,406 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>World Guesser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,600;0,700;1,700;1,800;1,900&display=swap" rel="stylesheet" />
   <style>
   :root {
     color-scheme: dark;
-    --ink:#f7f8ff; --muted:#aeb8d2; --muted2:#7e8aa8;
-    --night:#10162b; --panel:rgba(18,25,48,.84); --panel2:rgba(28,39,71,.92);
-    --line:rgba(219,228,255,.16); --purple:#7566dd; --blue:#54a8ef;
-    --yellow:#ffd84d; --green:#63dc9a; --red:#ff667d;
-    --shadow:0 18px 55px rgba(0,0,0,.38);
+    --display: "Exo 2", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --ink: #ffffff;
+    --muted: #b9b4de;
+    --purple: #6c47e0;
+    --purple-d: #4d30b3;
+    --navy: #1b1a3a;
+    --yellow: #fecd19;
+    --green: #6cbc3f;
+    --red: #ff5a6e;
+    --glass: rgba(24, 20, 64, .78);
+    --line: rgba(255, 255, 255, .16);
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;width:100%;min-height:100%;background:var(--night);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-  body{padding:0;overflow-x:hidden}
-  body.game-active{height:100%;overflow:hidden}
-  button,input,select{font:inherit}
-  button{cursor:pointer;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:rgba(31,43,77,.95);padding:11px 16px;font-weight:800;transition:transform .16s ease,filter .16s ease,background .16s ease,border-color .16s ease;}
-  button:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.12);border-color:rgba(255,255,255,.38)}
-  button:active:not(:disabled){transform:translateY(0) scale(.98)}
-  button:disabled{cursor:not-allowed;opacity:.42}
-  button.primary{background:linear-gradient(135deg,#ffe36b,#ffc52e);border-color:#ffe36b;color:#1d2340;box-shadow:0 5px 22px rgba(255,201,55,.22)}
-  button.primary:hover:not(:disabled){background:linear-gradient(135deg,#ffed92,#ffd04e)}
-  button.subtle{background:rgba(15,23,46,.55)}
-  input,select{width:100%;color:var(--ink);background:rgba(10,17,36,.8);border:1px solid var(--line);border-radius:10px;padding:12px 13px;outline:none}
-  input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(84,168,239,.16)}
-  label{display:block;font-size:11px;letter-spacing:.09em;color:var(--muted);margin:0 0 7px;font-weight:800;text-transform:uppercase}
-  .app-header{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:22px clamp(20px,4vw,64px);max-width:1800px;margin:0 auto}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:950;font-size:22px;letter-spacing:-.05em;text-transform:uppercase;text-shadow:0 2px 18px rgba(0,0,0,.3)}
-  .brand-mark{width:37px;height:37px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#fff17e,#ffbd35);color:#273052;font-size:22px;box-shadow:0 5px 20px rgba(255,202,52,.3)}
-  .brand span:last-child{color:var(--yellow)}
-  .header-note{color:var(--muted);font-size:12px;font-weight:650;letter-spacing:.04em}
-  .screen{display:none;max-width:1500px;margin:0 auto;animation:screenIn .35s ease both}
-  .screen.active{display:block}
-  @keyframes screenIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
-  .home-screen{min-height:calc(100vh - 82px);padding:0 clamp(20px,4vw,64px) 30px;max-width:1800px}
-  .home-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);gap:clamp(22px,4vw,64px);align-items:center;min-height:calc(100vh - 130px)}
-  .hero{position:relative;min-height:520px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:clamp(12px,3vw,40px) 0}
-  .hero:before{content:"";position:absolute;width:min(40vw,500px);height:min(40vw,500px);right:2%;top:50%;transform:translateY(-50%);border-radius:50%;background:radial-gradient(circle at 38% 34%,#6d9eff 0,#3868bd 24%,#203d84 52%,#171e50 69%,transparent 70%);box-shadow:0 0 85px rgba(99,132,255,.25);opacity:.85;pointer-events:none}
-  .hero:after{content:"";position:absolute;width:min(31vw,385px);height:min(31vw,385px);right:8%;top:50%;transform:translateY(-50%);border-radius:50%;border:1px solid rgba(255,255,255,.16);box-shadow:0 0 0 26px rgba(255,255,255,.025),0 0 0 54px rgba(255,255,255,.018);pointer-events:none}
-  .eyebrow{color:#ffe16a;font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:950}
-  h1{position:relative;z-index:1;font-size:clamp(43px,6.2vw,86px);line-height:.96;letter-spacing:-.075em;margin:17px 0 14px;max-width:700px;text-shadow:0 4px 30px rgba(0,0,0,.3)}
-  h1 em{color:var(--yellow);font-style:normal}
-  .hero-copy{position:relative;z-index:1;color:#c5cce0;max-width:490px;line-height:1.65;font-size:15px}
-  .mini-stats{position:relative;z-index:1;display:flex;gap:24px;margin-top:30px;flex-wrap:wrap}
-  .mini-stat strong{display:block;font-size:21px;color:white}.mini-stat span{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
-  .setup-card{position:relative;z-index:1;border:1px solid rgba(229,235,255,.17);background:linear-gradient(145deg,rgba(23,32,65,.85),rgba(18,24,48,.9));border-radius:22px;padding:clamp(20px,2.5vw,32px);box-shadow:var(--shadow);backdrop-filter:blur(14px)}
-  .setup-card h2,.lobby-card h2,.finish-card h2{margin:0 0 8px;font-size:23px;letter-spacing:-.04em}
-  .muted{color:var(--muted)}.small{font-size:12px;line-height:1.55}
-  .field{margin-top:15px}.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .mode-list{display:grid;gap:10px;margin:20px 0 16px}
-  .mode-button{display:flex;align-items:center;gap:14px;text-align:left;width:100%;padding:15px 16px;border-radius:14px;background:linear-gradient(110deg,rgba(47,62,111,.9),rgba(26,36,72,.92));border:1px solid rgba(220,230,255,.14)}
-  .mode-icon{flex:0 0 42px;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.1);font-size:21px}
-  .mode-copy{display:flex;flex-direction:column;gap:3px;flex:1}.mode-copy strong{font-size:15px;letter-spacing:.035em}.mode-copy small{font-size:11px;color:#bdc7e0;font-weight:550}.mode-arrow{font-size:22px;color:var(--yellow)}
-  .mode-button:hover:not(:disabled){background:linear-gradient(110deg,rgba(66,83,146,.96),rgba(34,49,92,.96))}
-  .btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.divider{border:0;border-top:1px solid var(--line);margin:18px 0}
-  .status-line{min-height:19px;margin-top:10px;color:var(--muted);font-size:12px}.status-line.error{color:#ff8b9c}
-  .pill{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid rgba(255,255,255,.15);border-radius:999px;background:rgba(12,19,42,.72);font-size:11px;font-weight:850;letter-spacing:.035em;backdrop-filter:blur(9px)}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 10px currentColor}
-  .lobby-wrap,.finish-wrap{max-width:760px;margin:35px auto;padding:32px;border:1px solid var(--line);background:linear-gradient(145deg,#202c59,#151d3d);border-radius:20px;box-shadow:var(--shadow)}
-  .room-code{font-size:46px;font-weight:950;letter-spacing:.18em;color:var(--yellow);margin:10px 0 4px}.player-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:18px 0}
-  .player-chip{background:rgba(9,15,33,.55);border:1px solid var(--line);padding:11px 12px;border-radius:11px;display:flex;justify-content:space-between;gap:9px;align-items:center}
-  .player-chip .score{color:var(--yellow);font-variant-numeric:tabular-nums;font-weight:900}
-  /* The game is a fixed viewport: no vertical page scroll for the timer or guess button. */
-  body.game-active #homeHeader{display:none}
-  body.game-active #gameScreen{display:block;position:fixed;inset:0;z-index:30;max-width:none;margin:0;width:100vw;height:100dvh;overflow:hidden;background:#080d1c;animation:gameEnter .3s ease both}
-  @keyframes gameEnter{from{opacity:.7}to{opacity:1}}
-  .game-topbar{position:absolute;z-index:1000;top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:9px;max-width:calc(100vw - 24px);padding:9px 13px;border:1px solid rgba(255,255,255,.19);border-radius:15px;background:rgba(15,22,47,.78);box-shadow:0 8px 34px rgba(0,0,0,.28);backdrop-filter:blur(13px);white-space:nowrap}
-  .game-meta{display:flex;gap:8px;align-items:center}.game-topbar .pill{border:0;background:transparent;padding:5px 7px;font-size:11px}.game-topbar .timer-pill{font-size:17px;font-variant-numeric:tabular-nums;color:white;min-width:76px;justify-content:center}.game-topbar .timer-pill.urgent{color:#ff7387;animation:timerPulse .8s ease-in-out infinite alternate}
-  @keyframes timerPulse{to{transform:scale(1.08);text-shadow:0 0 18px rgba(255,80,110,.7)}}
-  .game-stage{position:absolute;inset:0;width:100%;height:100%;min-height:0;border:0;border-radius:0;overflow:hidden;background:#090f20}
-  .view-panel{position:absolute;inset:0;min-width:0;overflow:hidden;background:#090f20}
-  #mly{width:100%;height:100%;min-height:0}
-  .panel-caption{display:none}
-  .compass-rose{position:absolute;z-index:900;left:18px;top:17px;width:76px;height:76px;border:1px solid rgba(255,255,255,.28);border-radius:50%;background:rgba(12,18,38,.72);backdrop-filter:blur(9px);box-shadow:0 8px 25px rgba(0,0,0,.3);display:grid;place-items:center;pointer-events:none}
-  .compass-ring{position:relative;width:49px;height:49px;border:1px solid rgba(255,255,255,.33);border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.8) 0deg 1deg,transparent 1deg 45deg)}
-  .compass-ring:before{content:"";position:absolute;inset:5px;border-radius:50%;border:1px solid rgba(255,255,255,.15)}
-  .compass-n{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:950;color:#fff}
-  .compass-needle{position:absolute;left:50%;top:50%;width:4px;height:34px;transform:translate(-50%,-50%) rotate(0deg);transform-origin:50% 50%;transition:transform .2s linear}
-  .compass-needle:before{content:"";position:absolute;top:0;left:-4px;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:18px solid #ff5d6e;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
-  .compass-needle:after{content:"";position:absolute;bottom:0;left:-4px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:16px solid #dbe4f5}
-  .compass-center{position:absolute;left:50%;top:50%;width:7px;height:7px;transform:translate(-50%,-50%);border-radius:50%;background:#fff;border:1px solid #17203e}
-  #compassHeading{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:850;color:#fff;text-shadow:0 1px 3px #000}
-  .live-leaderboard{position:absolute;z-index:850;top:83px;right:16px;width:225px;max-height:min(35vh,290px);overflow:hidden;border:1px solid rgba(255,255,255,.24);border-radius:13px;background:rgba(12,19,42,.78);box-shadow:0 12px 34px rgba(0,0,0,.3);backdrop-filter:blur(12px);color:#fff}
-  .live-leaderboard-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.13);font-size:10px;font-weight:950;letter-spacing:.12em;color:#ffe16a}
-  .live-leaderboard-body{max-height:calc(min(35vh,290px) - 38px);overflow:auto;padding:4px 0}
-  .live-rank{display:grid;grid-template-columns:22px 1fr auto;gap:7px;align-items:center;padding:7px 10px;font-size:11px;border-bottom:1px solid rgba(255,255,255,.055)}
-  .live-rank:last-child{border-bottom:0}.live-rank .rank-no{color:#9eafd2;font-weight:900}.live-rank .rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:750}.live-rank .rank-score{color:#ffe16a;font-weight:950;font-variant-numeric:tabular-nums}
-  .live-rank.me{background:rgba(255,216,77,.09)}
-  .map-dock{position:absolute;z-index:1100;right:20px;bottom:91px;width:clamp(195px,19vw,250px);height:clamp(135px,17vh,175px);border:2px solid rgba(255,255,255,.9);border-radius:12px;overflow:hidden;background:#dbe4df;box-shadow:0 12px 38px rgba(0,0,0,.5);transition:width .22s cubic-bezier(.2,.8,.2,1),height .22s cubic-bezier(.2,.8,.2,1),border-radius .22s ease,box-shadow .22s ease}
-  .map-dock:hover{width:min(430px,46vw);height:min(300px,42vh);box-shadow:0 18px 48px rgba(0,0,0,.58)}
-  .map-dock.dragging,.map-dock.locked{width:min(730px,72vw);height:min(620px,72vh);border-radius:15px;box-shadow:0 25px 70px rgba(0,0,0,.65)}
-  #guessMap{width:100%;height:100%;min-height:0;background:#dbe4df}
-  .map-caption{position:absolute;z-index:900;top:8px;left:9px;padding:6px 8px;border-radius:7px;background:rgba(12,20,38,.82);color:white;font-size:9px;font-weight:950;letter-spacing:.09em;pointer-events:none}
-  #mapExpandBtn{position:absolute;z-index:950;top:6px;right:6px;width:29px;height:29px;padding:0;border-radius:7px;border:1px solid rgba(255,255,255,.7);background:rgba(12,20,38,.88);color:#fff;font-size:17px;line-height:1}
-  #mapExpandBtn:hover{background:#364a81}
-  .game-controls{position:absolute;z-index:1150;left:50%;bottom:17px;transform:translateX(-50%);width:min(720px,calc(100vw - 32px));display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 10px 16px;border:1px solid rgba(255,255,255,.24);border-radius:15px;background:rgba(12,19,42,.88);box-shadow:0 12px 36px rgba(0,0,0,.36);backdrop-filter:blur(13px)}
-  .control-hint{color:#c1cbe0;font-size:11px;line-height:1.35;max-width:340px}.game-controls .btn-row{display:flex;gap:8px;margin:0;flex-shrink:0}.game-controls button{padding:11px 17px}.game-controls button.primary{min-width:140px}
-  .round-result{display:none;position:absolute;z-index:1200;left:50%;bottom:88px;transform:translateX(-50%);width:min(580px,calc(100vw - 32px));max-height:42vh;overflow:auto;border:1px solid rgba(255,255,255,.24);border-radius:16px;background:rgba(14,22,48,.94);box-shadow:0 20px 60px rgba(0,0,0,.52);backdrop-filter:blur(16px);padding:15px 18px}
-  .round-result.visible{display:block;animation:resultReveal .55s cubic-bezier(.16,1,.3,1) both}
-  @keyframes resultReveal{from{opacity:0;transform:translate(-50%,18px) scale(.97)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
-  .result-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.result-score{font-size:28px;font-weight:950;color:var(--yellow);letter-spacing:-.05em;text-shadow:0 0 22px rgba(255,216,77,.23)}
-  .leaderboard{width:100%;border-collapse:collapse;margin-top:9px;font-size:11px}.leaderboard th,.leaderboard td{padding:7px 7px;text-align:left;border-bottom:1px solid rgba(255,255,255,.09)}.leaderboard th{color:#abb7d2;font-size:9px;text-transform:uppercase;letter-spacing:.08em}.leaderboard td:last-child,.leaderboard th:last-child{text-align:right;font-variant-numeric:tabular-nums}
-  .finish-card{text-align:center}.finish-total{font-size:58px;font-weight:950;color:var(--yellow);letter-spacing:-.06em;margin:10px 0}.attribution{font-size:10px;color:var(--muted);padding:8px 2px 0}
-  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:5000;background:#202c55;color:white;padding:10px 15px;border-radius:10px;border:1px solid #6478b1;box-shadow:0 8px 30px rgba(0,0,0,.42);font-size:13px;display:none;max-width:90%}
-  .time-up-overlay{position:absolute;z-index:1300;left:50%;top:42%;transform:translate(-50%,-50%) scale(.84);padding:18px 30px;border-radius:16px;border:1px solid rgba(255,255,255,.3);background:rgba(12,19,42,.88);box-shadow:0 18px 60px rgba(0,0,0,.55);font-size:clamp(24px,4vw,42px);font-weight:1000;letter-spacing:.05em;text-transform:uppercase;color:#ffe16a;opacity:0;pointer-events:none;white-space:nowrap}
-  .time-up-overlay.show{animation:timeUpIn 1.7s cubic-bezier(.16,1,.3,1) both}
-  @keyframes timeUpIn{0%{opacity:0;transform:translate(-50%,-35%) scale(.8)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}65%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-58%) scale(1.02)}}
-  .screen-exit{animation:screenOut .25s ease both}@keyframes screenOut{to{opacity:0;transform:scale(.985)}}
-  @media(max-width:900px){.home-grid{grid-template-columns:1fr}.hero{min-height:340px}.hero:before,.hero:after{right:5%;width:280px;height:280px}.live-leaderboard{width:190px;top:74px;right:9px}.compass-rose{left:10px;top:10px;transform:scale(.85);transform-origin:top left}.map-dock{right:10px;bottom:84px;width:185px;height:128px}.map-dock:hover{width:min(360px,65vw);height:min(250px,38vh)}.map-dock.dragging,.map-dock.locked{width:92vw;height:68vh;right:4vw;bottom:7vh}}
-  @media(max-width:620px){.app-header{padding:15px 16px}.home-screen{padding:0 16px 22px}.header-note{display:none}.hero{min-height:300px}.hero:before,.hero:after{right:2%;width:220px;height:220px}.setup-card{padding:18px}.field-row{grid-template-columns:1fr}.game-topbar{top:8px;gap:3px;padding:6px 8px}.game-topbar .pill{font-size:9px;padding:4px}.game-topbar .timer-pill{font-size:15px}.live-leaderboard{top:64px;right:7px;width:152px;max-height:26vh}.live-leaderboard-body{max-height:calc(26vh - 38px)}.live-leaderboard-head{font-size:9px;padding:7px 8px}.live-rank{font-size:9px;padding:5px 7px}.map-dock{right:8px;bottom:82px;width:145px;height:104px}.map-dock:hover{width:78vw;height:38vh}.map-dock.dragging,.map-dock.locked{width:94vw;height:68vh;right:3vw;bottom:7vh}.game-controls{bottom:8px;width:calc(100vw - 16px);padding:8px;gap:6px}.control-hint{display:none}.game-controls .btn-row{width:100%}.game-controls button{flex:1;padding:11px 8px}.game-controls button.primary{min-width:0}.round-result{bottom:72px;max-height:38vh;padding:11px}.compass-rose{width:58px;height:58px;transform:scale(.8);transform-origin:top left}}
-  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
-</style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; min-height: 100%; font-family: var(--display); color: var(--ink); }
+  body {
+    min-height: 100vh;
+    overflow-x: hidden;
+    background:
+      radial-gradient(ellipse 70% 55% at 78% 8%, rgba(96, 170, 196, .65), transparent 70%),
+      radial-gradient(ellipse 55% 50% at 8% 20%, rgba(124, 82, 214, .75), transparent 70%),
+      linear-gradient(180deg, #4a79a6 0%, #3d3f8c 24%, #2a2062 52%, #1b1a3a 100%);
+    background-attachment: fixed;
+  }
+  body.game-active { height: 100%; overflow: hidden; }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+
+  /* ---------- generic controls ---------- */
+  .btn {
+    border: 0; border-radius: 10px; padding: 12px 20px;
+    font-style: italic; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+    background: rgba(255,255,255,.14); border: 1px solid var(--line);
+    transition: transform .15s ease, filter .15s ease, background .15s ease;
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.15); }
+  .btn:active:not(:disabled) { transform: translateY(0) scale(.98); }
+  .btn:disabled { opacity: .45; }
+  .btn.primary { background: linear-gradient(180deg, #ffe061, #fecd19); color: #2a2250; border-color: #ffe061; box-shadow: 0 6px 22px rgba(254,205,25,.28); }
+  .btn.purple { background: linear-gradient(180deg, #7c5aee, #5c3dcc); border-color: #8f72ff; }
+  input[type=text], input:not([type]), select {
+    width: 100%; background: rgba(10, 8, 40, .55); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 13px; outline: none; font-weight: 600;
+  }
+  input:focus, select:focus { border-color: #9a82ff; box-shadow: 0 0 0 3px rgba(154,130,255,.22); }
+  select option { background: #1b1a3a; color: #fff; }
+  label { display: block; font-size: 11px; letter-spacing: .1em; color: var(--muted); margin: 0 0 7px; font-weight: 800; text-transform: uppercase; }
+  .muted { color: var(--muted); } .small { font-size: 12px; line-height: 1.55; }
+  .eyebrow { color: var(--yellow); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; font-weight: 800; }
+  .status-line { min-height: 18px; margin-top: 10px; color: #d8d3ff; font-size: 13px; font-weight: 600; }
+  .status-line.error { color: #ff9aa8; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(12,10,44,.6); font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; box-shadow: 0 0 10px currentColor; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .divider { border: 0; border-top: 1px solid var(--line); margin: 18px 0; }
+
+  /* ---------- header / logo ---------- */
+  .app-header { position: absolute; z-index: 20; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px clamp(20px, 2.2vw, 40px); pointer-events: none; }
+  .app-header > * { pointer-events: auto; }
+  .logo { display: flex; align-items: center; gap: 6px; font-style: italic; font-weight: 900; font-size: 24px; letter-spacing: .01em; color: #fff; -webkit-text-stroke: 5px #e5233f; paint-order: stroke fill; text-transform: uppercase; user-select: none; }
+  .logo svg { width: 22px; height: 28px; margin-right: -2px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+  .profile { display: flex; align-items: center; gap: 10px; background: rgba(12,10,44,.45); border: 1px solid var(--line); border-radius: 999px; padding: 5px 8px 5px 5px; backdrop-filter: blur(8px); }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(145deg, #ffe061, #f5a623); color: #3a2a00; font-size: 18px; flex: none; }
+  .profile input { width: 150px; background: transparent; border: 0; padding: 6px 4px; font-style: italic; font-weight: 800; letter-spacing: .02em; }
+  .profile input:focus { box-shadow: none; }
+
+  /* ---------- screens ---------- */
+  .screen { display: none; }
+  .screen.active { display: block; animation: screenIn .35s ease both; }
+  @keyframes screenIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---------- home ---------- */
+  #homeScreen { position: relative; min-height: 100vh; overflow: hidden; }
+  .home-menu { position: relative; z-index: 3; min-height: 100vh; padding: 90px clamp(24px, 3.4vw, 64px) 110px; display: flex; flex-direction: column; justify-content: center; max-width: 640px; }
+  .menu-item {
+    display: block; background: none; border: 0; padding: 0; margin: 0; text-align: left;
+    font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase;
+    font-size: clamp(34px, 4.4vw, 56px); line-height: 1.42; letter-spacing: .005em; color: #fff;
+    text-shadow: 0 4px 20px rgba(0,0,0,.35);
+    transition: transform .16s ease, text-shadow .16s ease;
+  }
+  .menu-item:hover:not(:disabled) { transform: translateX(10px); text-shadow: 0 0 26px rgba(255,255,255,.55); }
+  .menu-item:disabled { opacity: .35; }
+  .continue { margin-top: 38px; }
+  .continue-label { font-size: 16px; color: #e6e2ff; margin-bottom: 10px; }
+  .setting-chip { display: flex; align-items: center; gap: 12px; background: none; border: 0; padding: 4px 0; text-align: left; }
+  .setting-chip svg { width: 24px; height: 30px; flex: none; filter: drop-shadow(0 2px 6px rgba(255,200,0,.4)); }
+  .setting-chip strong { display: block; font-size: 15px; letter-spacing: .03em; text-transform: uppercase; }
+  .setting-chip small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .setting-chip:hover strong { text-decoration: underline; }
+  .globe-wrap { position: absolute; z-index: 1; right: clamp(16px, 9vw, 170px); top: 50%; width: min(46vw, 62vh, 620px); aspect-ratio: 1; transform: translateY(-50%); filter: drop-shadow(0 0 60px rgba(120,150,255,.35)); }
+  .globe-wrap canvas { width: 100%; height: 100%; display: block; }
+  .globe-wrap:before { content: ""; position: absolute; inset: -6%; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.0) 55%, rgba(150,170,255,.22) 66%, transparent 72%); }
+  .globe-pin { position: absolute; z-index: 2; width: 21%; right: 8%; top: -9%; animation: bob 3.2s ease-in-out infinite; filter: drop-shadow(0 12px 14px rgba(0,0,0,.35)); }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-12px) rotate(2deg); } }
+  .home-links { position: absolute; z-index: 4; left: clamp(24px, 3.4vw, 64px); bottom: 26px; display: flex; gap: 22px; }
+  .home-link { background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; letter-spacing: .02em; text-transform: uppercase; opacity: .92; padding: 4px; }
+  .home-link:hover { opacity: 1; text-decoration: underline; }
+  .home-link .ico { width: 18px; height: 18px; border: 1.5px solid #fff; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; line-height: 1; }
+  .setup-note { position: absolute; z-index: 4; right: clamp(20px, 3vw, 54px); bottom: 28px; max-width: min(520px, 46vw); text-align: right; font-size: 11px; line-height: 1.5; color: #b9b4de; }
+
+  /* ---------- modals ---------- */
+  .modal-backdrop { position: fixed; inset: 0; z-index: 6000; display: none; place-items: center; padding: 18px; background: rgba(8, 6, 30, .7); backdrop-filter: blur(6px); }
+  .modal-backdrop.open { display: grid; animation: screenIn .2s ease both; }
+  .modal { width: min(460px, 100%); border-radius: 18px; border: 1px solid rgba(255,255,255,.2); background: linear-gradient(160deg, #3a2d8a, #211a56); box-shadow: 0 30px 80px rgba(0,0,0,.55); padding: 26px; }
+  .modal h2 { margin: 6px 0 4px; font-size: 24px; font-style: italic; font-weight: 900; text-transform: uppercase; }
+  .field { margin-top: 15px; } .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal ol { margin: 14px 0 0; padding-left: 20px; color: #e3deff; line-height: 1.7; font-size: 14px; }
+
+  /* ---------- lobby / finish ---------- */
+  #lobbyScreen, #finishScreen { min-height: 100vh; padding: 100px 18px 40px; }
+  .panel { max-width: 760px; margin: 0 auto; padding: 32px; border: 1px solid rgba(255,255,255,.18); background: var(--glass); border-radius: 20px; box-shadow: 0 24px 70px rgba(0,0,0,.4); backdrop-filter: blur(14px); }
+  .panel h2 { margin: 6px 0 8px; font-size: 30px; font-style: italic; font-weight: 900; text-transform: uppercase; }
+  .room-code { font-size: 54px; font-weight: 900; font-style: italic; letter-spacing: .18em; color: var(--yellow); margin: 10px 0 4px; }
+  .player-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin: 18px 0; }
+  .player-chip { background: rgba(10,8,40,.5); border: 1px solid var(--line); padding: 11px 13px; border-radius: 11px; display: flex; justify-content: space-between; gap: 9px; align-items: center; font-weight: 700; }
+  .player-chip .score { color: var(--yellow); font-variant-numeric: tabular-nums; font-weight: 900; }
+  .finish-card { text-align: center; }
+  .finish-total { font-size: 74px; font-weight: 900; font-style: italic; color: var(--yellow); letter-spacing: -.03em; margin: 8px 0 0; text-shadow: 0 0 30px rgba(254,205,25,.3); }
+  .leaderboard { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  .leaderboard th, .leaderboard td { padding: 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.1); }
+  .leaderboard th { color: #b9b4de; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+  .leaderboard td:last-child, .leaderboard th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ---------- game (fixed full viewport) ---------- */
+  body.game-active #homeHeader { display: none; }
+  body.game-active #gameScreen { display: block; position: fixed; inset: 0; z-index: 30; width: 100vw; height: 100dvh; overflow: hidden; background: #080d1c; animation: none; }
+  .game-stage { position: absolute; inset: 0; overflow: hidden; background: #090f20; }
+  .view-panel { position: absolute; inset: 0; overflow: hidden; background: #090f20; }
+  #mly { width: 100%; height: 100%; }
+
+  /* compass strip */
+  .hud-compass { position: absolute; z-index: 900; top: 10px; left: 50%; transform: translateX(-50%); width: min(340px, 52vw); height: 30px; border-radius: 7px; overflow: hidden; background: rgba(214, 220, 240, .62); border: 1px solid rgba(255,255,255,.7); backdrop-filter: blur(6px); box-shadow: 0 4px 16px rgba(0,0,0,.25); color: #232a52; pointer-events: none; }
+  .compass-track { position: absolute; left: 50%; top: 0; width: 340px; margin-left: -170px; height: 100%; }
+  .compass-track .tick { position: absolute; bottom: 0; width: 1px; height: 7px; background: rgba(35,42,82,.55); }
+  .compass-track .tick.major { height: 11px; background: rgba(35,42,82,.9); }
+  .compass-track .tlabel { position: absolute; top: 3px; transform: translateX(-50%); font-size: 13px; font-weight: 900; font-style: italic; }
+  .compass-center { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #6c47e0; box-shadow: 0 0 6px rgba(108,71,224,.7); }
+  .compass-readout { position: absolute; z-index: 900; top: 44px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-shadow: 0 1px 3px #000; pointer-events: none; }
+
+  /* skewed round / score panel */
+  .hud-info { position: absolute; z-index: 1190; top: 0; right: 16px; display: flex; gap: 26px; padding: 9px 26px 11px; background: linear-gradient(180deg, #7c5aee, #5a3bc8); border-radius: 0 0 10px 10px; box-shadow: 0 10px 28px rgba(20, 8, 70, .5); transform: skewX(-10deg); }
+  .info-cell { transform: skewX(10deg); display: flex; flex-direction: column; align-items: center; min-width: 52px; }
+  .info-cell span { font-size: 9px; letter-spacing: .14em; font-weight: 800; color: rgba(255,255,255,.72); }
+  .info-cell strong { font-size: 17px; font-weight: 900; font-style: italic; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hud-timer { position: absolute; z-index: 900; top: 62px; left: 50%; transform: translateX(-50%) skewX(-10deg); display: flex; align-items: center; gap: 9px; padding: 6px 20px; background: linear-gradient(180deg, #7c5aee, #5a3bc8); border-radius: 8px; box-shadow: 0 8px 22px rgba(20,8,70,.45); font-size: 19px; font-weight: 900; font-style: italic; font-variant-numeric: tabular-nums; }
+  .hud-timer > * { transform: skewX(10deg); }
+  .hud-timer.urgent { background: linear-gradient(180deg, #ff6a80, #d62e4c); animation: timerPulse .8s ease-in-out infinite alternate; }
+  @keyframes timerPulse { to { filter: brightness(1.2); } }
+  .game-status { position: absolute; z-index: 900; top: 106px; left: 50%; transform: translateX(-50%); padding: 5px 14px; border-radius: 999px; background: rgba(12,10,44,.62); border: 1px solid rgba(255,255,255,.18); font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; backdrop-filter: blur(6px); }
+
+  /* left tool buttons */
+  .side-controls { position: absolute; z-index: 900; left: 16px; bottom: 26px; display: flex; flex-direction: column; gap: 8px; }
+  .round-btn { width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 1px solid rgba(255,255,255,.22); background: rgba(22, 20, 56, .82); box-shadow: 0 4px 14px rgba(0,0,0,.35); font-size: 21px; font-weight: 700; line-height: 1; display: grid; place-items: center; transition: transform .14s ease, background .14s ease; }
+  .round-btn:hover:not(:disabled) { background: #4a3aa8; transform: scale(1.08); }
+  .round-btn svg { width: 18px; height: 18px; }
+
+  /* multiplayer leaderboard */
+  .live-leaderboard { position: absolute; z-index: 850; top: 14px; left: 14px; width: 210px; max-height: min(34vh, 280px); overflow: hidden; border: 1px solid rgba(255,255,255,.2); border-radius: 12px; background: rgba(16, 13, 50, .78); box-shadow: 0 12px 34px rgba(0,0,0,.3); backdrop-filter: blur(12px); }
+  .live-leaderboard-head { display: flex; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.12); font-size: 10px; font-weight: 800; letter-spacing: .12em; color: var(--yellow); }
+  .live-leaderboard-body { max-height: calc(min(34vh, 280px) - 36px); overflow: auto; padding: 3px 0; }
+  .live-rank { display: grid; grid-template-columns: 20px 1fr auto; gap: 7px; align-items: center; padding: 6px 10px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .live-rank:last-child { border-bottom: 0; }
+  .rank-no { color: #a9a3d8; font-weight: 800; } .rank-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; } .rank-score { color: var(--yellow); font-weight: 900; font-variant-numeric: tabular-nums; }
+  .live-rank.me { background: rgba(254,205,25,.1); }
+
+  /* minimap + guess button */
+  .map-wrap { --bw: 250px; --bh: 160px; --mw: var(--bw); --mh: var(--bh); position: absolute; z-index: 1100; right: 20px; bottom: 22px; width: var(--mw); display: flex; flex-direction: column; gap: 8px; transition: width .22s cubic-bezier(.2,.8,.2,1); }
+  .map-wrap.lvl2 { --bw: 340px; --bh: 220px; }
+  .map-wrap.lvl3 { --bw: 470px; --bh: 310px; }
+  .map-wrap:hover, .map-wrap.peek { --mw: min(calc(var(--bw) * 1.8), 62vw); --mh: min(calc(var(--bh) * 1.9), 56vh); }
+  .map-wrap.locked, .map-wrap.locked:hover { --mw: min(800px, 72vw); --mh: min(580px, 66vh); }
+  .map-tools { display: flex; gap: 6px; opacity: .9; }
+  .map-tools .round-btn { width: 30px; height: 30px; font-size: 16px; }
+  .map-tools .round-btn svg { width: 15px; height: 15px; }
+  .map-tools .round-btn.active { background: #6c47e0; border-color: #a18dff; }
+  .map-dock { flex: none; height: var(--mh); border: 2px solid rgba(255,255,255,.92); border-radius: 12px; overflow: hidden; background: #dbe4df; box-shadow: 0 12px 38px rgba(0,0,0,.5); transition: height .22s cubic-bezier(.2,.8,.2,1); }
+  #guessMap { width: 100%; height: 100%; background: #dbe4df; }
+  .wg-pin { background: none; border: 0; }
+  .guess-btn { width: 100%; padding: 13px 10px; border: 0; border-radius: 999px; background: rgba(18, 16, 52, .86); border: 1px solid rgba(255,255,255,.22); color: #fff; font-weight: 800; font-style: italic; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; box-shadow: 0 8px 24px rgba(0,0,0,.4); transition: background .15s ease, transform .15s ease, box-shadow .15s ease; }
+  .guess-btn:disabled { opacity: .88; }
+  .guess-btn.ready { background: linear-gradient(180deg, #7ccf4a, #55a82a); border-color: #a7ea7a; font-size: 16px; box-shadow: 0 8px 26px rgba(108,188,63,.45); }
+  .guess-btn.ready:hover { transform: translateY(-2px); filter: brightness(1.1); }
+  .map-wrap.result { inset: 0; right: 0; bottom: 0; width: 100% !important; height: 100%; gap: 0; z-index: 1180; transition: none; }
+  .map-wrap.result .map-dock { flex: 1; height: auto; border: 0; border-radius: 0; transition: none; }
+  .map-wrap.result .map-tools, .map-wrap.result .guess-btn { display: none; }
+  .game-stage.result-mode .hud-timer, .game-stage.result-mode .game-status, .game-stage.result-mode .compass-readout, .game-stage.result-mode .hud-compass, .game-stage.result-mode .side-controls, .game-stage.result-mode .control-hint { display: none; }
+
+  .control-hint { position: absolute; z-index: 900; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; background: rgba(12,10,44,.6); font-size: 11px; font-weight: 700; color: #ddd8ff; max-width: min(460px, 44vw); text-align: center; backdrop-filter: blur(6px); }
+  .control-hint:empty { display: none; }
+
+  .round-result { display: none; position: absolute; z-index: 1250; left: 50%; bottom: 28px; transform: translateX(-50%); width: min(600px, calc(100vw - 28px)); max-height: 46vh; overflow: auto; border: 1px solid rgba(255,255,255,.24); border-radius: 18px; background: linear-gradient(160deg, rgba(52, 38, 130, .96), rgba(26, 20, 70, .96)); box-shadow: 0 22px 64px rgba(0,0,0,.55); backdrop-filter: blur(16px); padding: 16px 20px; }
+  .round-result.visible { display: block; animation: resultReveal .5s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes resultReveal { from { opacity: 0; transform: translate(-50%, 18px) scale(.97); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+  .result-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .result-score { font-size: 34px; font-weight: 900; font-style: italic; color: var(--yellow); text-shadow: 0 0 24px rgba(254,205,25,.3); }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 7000; background: #2d2373; color: #fff; padding: 10px 16px; border-radius: 10px; border: 1px solid #8f7cf0; box-shadow: 0 8px 30px rgba(0,0,0,.42); font-size: 13px; font-weight: 600; display: none; max-width: 90%; }
+  .time-up-overlay { position: absolute; z-index: 1300; left: 50%; top: 40%; transform: translate(-50%, -50%) scale(.84); padding: 16px 32px; border-radius: 16px; border: 1px solid rgba(255,255,255,.3); background: rgba(24, 16, 70, .9); box-shadow: 0 18px 60px rgba(0,0,0,.55); font-size: clamp(24px, 4vw, 42px); font-weight: 900; font-style: italic; letter-spacing: .05em; text-transform: uppercase; color: var(--yellow); opacity: 0; pointer-events: none; white-space: nowrap; }
+  .time-up-overlay.show { animation: timeUpIn 1.7s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes timeUpIn { 0% { opacity: 0; transform: translate(-50%, -35%) scale(.8); } 18% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); } 65% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -58%) scale(1.02); } }
+
+  @media (max-width: 900px) {
+    .globe-wrap { right: -8%; width: 70vw; opacity: .55; }
+    .setup-note { display: none; }
+    .live-leaderboard { width: 160px; }
+  }
+  @media (max-width: 620px) {
+    .app-header { padding: 14px 14px; } .logo { font-size: 18px; -webkit-text-stroke-width: 4px; } .profile input { width: 100px; }
+    .home-menu { padding-top: 80px; } .field-row { grid-template-columns: 1fr; }
+    .hud-info { right: 6px; gap: 14px; padding: 7px 14px 9px; } .info-cell { min-width: 40px; } .info-cell strong { font-size: 14px; }
+    .hud-timer { top: 54px; font-size: 16px; } .game-status { top: 94px; font-size: 10px; }
+    .map-wrap { --bw: 150px; --bh: 108px; right: 8px; bottom: 10px; } .map-wrap.lvl2 { --bw: 210px; --bh: 150px; } .map-wrap.lvl3 { --bw: 270px; --bh: 190px; }
+    .guess-btn { font-size: 10px; padding: 10px 6px; letter-spacing: .04em; } .guess-btn.ready { font-size: 13px; }
+    .control-hint { display: none; } .side-controls { left: 8px; bottom: 12px; } .round-btn { width: 36px; height: 36px; }
+    .live-leaderboard { width: 140px; top: 8px; left: 8px; max-height: 24vh; } .round-result { bottom: 12px; padding: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+  </style>
 </head>
 <body>
   <header class="app-header" id="homeHeader">
-    <div class="brand"><div class="brand-mark">◎</div><div>WORLD <span>GUESSER</span></div></div>
-    <div class="header-note">Explore the world · one panorama at a time</div>
+    <div class="logo">
+      <svg viewBox="0 0 120 150" aria-hidden="true"><path d="M60 146C60 146 8 88 8 52A52 52 0 0 1 112 52C112 88 60 146 60 146Z" fill="#e5233f"/><circle cx="60" cy="52" r="28" fill="#fff"/></svg>
+      <span>World Guesser</span>
+    </div>
+    <label class="profile" for="playerName" title="Your player name">
+      <span class="avatar">🧭</span>
+      <input id="playerName" maxlength="18" placeholder="Player name" autocomplete="nickname" />
+    </label>
   </header>
 
-  <main id="homeScreen" class="screen active home-screen">
-    <div class="home-grid">
-      <section class="hero">
-        <div class="eyebrow">Your next location is waiting</div>
-        <h1>How well do you<br><em>know the world?</em></h1>
-        <div class="hero-copy">Explore real streets, spot the clues, and pinpoint your location. Play solo, team up with a partner, or challenge a whole room.</div>
-        <div class="mini-stats">
-          <div class="mini-stat"><strong>5,000</strong><span>Points per round</span></div>
-          <div class="mini-stat"><strong>5</strong><span>Classic rounds</span></div>
-          <div class="mini-stat"><strong>360°</strong><span>Street exploration</span></div>
-        </div>
-      </section>
-      <section class="setup-card">
-        <div class="eyebrow">Choose your game</div>
-        <h2>Let's explore</h2>
-        <div class="muted small">Set your name and round settings, then choose a mode.</div>
-        <div class="field"><label for="playerName">Player name</label><input id="playerName" maxlength="18" placeholder="Enter your name" autocomplete="nickname" /></div>
-        <div class="field-row">
-          <div class="field"><label for="roundCount">Rounds</label><select id="roundCount"><option value="3">3 rounds</option><option value="5" selected>5 rounds</option><option value="10">10 rounds</option></select></div>
-          <div class="field"><label for="roundSeconds">Time per round</label><select id="roundSeconds"><option value="45">45 seconds</option><option value="60">60 seconds</option><option value="90" selected>90 seconds</option><option value="120">2 minutes</option></select></div>
-        </div>
-        <div class="mode-list">
-          <button id="soloBtn" class="mode-button primary"><span class="mode-icon">🌍</span><span class="mode-copy"><strong>SINGLEPLAYER</strong><small>Take on five rounds by yourself</small></span><span class="mode-arrow">›</span></button>
-          <button id="createDuoBtn" class="mode-button"><span class="mode-icon">🤝</span><span class="mode-copy"><strong>DUOS</strong><small>Team up with one friend using a room code</small></span><span class="mode-arrow">›</span></button>
-          <button id="createRoomBtn" class="mode-button"><span class="mode-icon">🏆</span><span class="mode-copy"><strong>MULTIPLAYER</strong><small>Create a room and compete with up to 20 players</small></span><span class="mode-arrow">›</span></button>
-        </div>
-        <div class="field-row join-row">
-          <div class="field"><label for="roomCodeInput">Have a room code?</label><input id="roomCodeInput" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" /></div>
-          <div class="field" style="display:flex;align-items:end"><button id="joinRoomBtn" style="width:100%">Join room</button></div>
-        </div>
-        <div id="homeStatus" class="status-line" aria-live="polite"></div>
-        <div id="setupNote" class="muted small">Loading game services…</div>
-      </section>
+  <!-- ===== HOME ===== -->
+  <main id="homeScreen" class="screen active">
+    <div class="globe-wrap" aria-hidden="true">
+      <canvas id="globeCanvas" width="1000" height="1000"></canvas>
+      <svg class="globe-pin" viewBox="0 0 120 150">
+        <defs><linearGradient id="pinGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6677"/><stop offset="1" stop-color="#d4122e"/></linearGradient></defs>
+        <path d="M60 146C60 146 8 88 8 52A52 52 0 0 1 112 52C112 88 60 146 60 146Z" fill="url(#pinGrad)"/>
+        <circle cx="60" cy="52" r="31" fill="#fff"/><circle cx="60" cy="52" r="15" fill="#e11d3a"/>
+      </svg>
     </div>
+
+    <section class="home-menu">
+      <nav>
+        <button id="soloBtn" class="menu-item">Singleplayer</button>
+        <button id="createDuoBtn" class="menu-item">Duos</button>
+        <button id="createRoomBtn" class="menu-item">Multiplayer</button>
+        <button id="joinMenuBtn" class="menu-item">Join room</button>
+      </nav>
+      <div class="continue">
+        <div class="continue-label">Game settings:</div>
+        <button id="openSettingsBtn" class="setting-chip" type="button">
+          <svg viewBox="0 0 24 30" aria-hidden="true"><path d="M14 0 2 17h8l-3 13L22 11h-8z" fill="#fecd19"/></svg>
+          <span><strong id="settingsSummary">5 rounds · 90 seconds</strong><small>Click to change</small></span>
+        </button>
+        <div id="homeStatus" class="status-line" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <div class="home-links">
+      <button class="home-link" id="openHelpBtn" type="button"><span class="ico">?</span>How to play</button>
+      <button class="home-link" id="openSettingsBtn2" type="button"><span class="ico">⚙</span>Settings</button>
+    </div>
+    <div id="setupNote" class="setup-note">Loading game services…</div>
   </main>
 
+  <!-- ===== LOBBY ===== -->
   <main id="lobbyScreen" class="screen">
-    <div class="lobby-wrap lobby-card">
+    <div class="panel">
       <div class="eyebrow" id="roomModeLabel">MULTIPLAYER ROOM</div>
       <h2>Invite your friends</h2>
       <div class="muted small" id="roomLobbyDescription">Share this code so everyone can join the same game.</div>
       <div class="room-code" id="roomCodeDisplay">------</div>
-      <div class="btn-row"><button id="copyRoomCodeBtn">Copy room code</button><span id="hostBadge" class="pill"><span class="dot"></span> Host</span></div>
+      <div class="btn-row" style="margin-top:6px"><button id="copyRoomCodeBtn" class="btn">Copy room code</button><span id="hostBadge" class="pill"><span class="dot"></span> Host</span></div>
       <hr class="divider" />
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><strong>Players</strong><span class="muted small" id="playerCount">0 / 20</span></div>
       <div id="lobbyPlayers" class="player-list"></div>
-      <div class="btn-row"><button id="startRoomBtn" class="primary">Start game</button><button id="leaveRoomBtn" class="subtle">Leave room</button></div>
+      <div class="btn-row"><button id="startRoomBtn" class="btn primary">Start game</button><button id="leaveRoomBtn" class="btn">Leave room</button></div>
       <div id="lobbyStatus" class="status-line" aria-live="polite">Waiting for players…</div>
     </div>
   </main>
 
-  <main id="gameScreen" class="screen game-screen">
-    <div class="game-topbar">
-      <div class="game-meta">
-        <span class="pill" id="roundPill">ROUND 1 / 5</span>
-        <span class="pill" id="scorePill">SCORE 0</span>
-        <span class="pill" id="modePill">SINGLEPLAYER</span>
-      </div>
-      <div class="game-meta">
-        <span class="pill timer-pill" id="timerPill"><span class="dot" id="timerDot"></span><span id="timerText">01:30</span></span>
-        <span class="pill" id="gameStatusPill">Find your location</span>
-      </div>
-    </div>
+  <!-- ===== GAME ===== -->
+  <main id="gameScreen" class="screen">
     <div class="game-stage" id="gameStage">
-      <section class="view-panel"><div class="panel-caption">STREET-LEVEL VIEW</div><div id="mly"></div></section>
-      <div class="compass-rose" aria-label="Compass">
-        <div class="compass-ring"><span class="compass-n">N</span><div class="compass-needle" id="compassNeedle"></div><div class="compass-center"></div></div>
-        <span id="compassHeading">000°</span>
+      <section class="view-panel"><div id="mly"></div></section>
+
+      <div class="hud-compass" aria-label="Compass"><div class="compass-track" id="compassTrack"></div><div class="compass-center"></div></div>
+      <div class="compass-readout" id="compassHeading">000°</div>
+
+      <div class="hud-info">
+        <div class="info-cell"><span>MAP</span><strong id="modePill">World</strong></div>
+        <div class="info-cell"><span>ROUND</span><strong id="roundPill">1 / 5</strong></div>
+        <div class="info-cell"><span>SCORE</span><strong id="scorePill">0</strong></div>
       </div>
-      <aside class="live-leaderboard" id="liveLeaderboard">
+
+      <div class="hud-timer" id="timerPill"><span class="dot" id="timerDot"></span><span id="timerText">01:30</span></div>
+      <div class="game-status" id="gameStatusPill">Find your location</div>
+
+      <aside class="live-leaderboard" id="liveLeaderboard" style="display:none">
         <div class="live-leaderboard-head"><span>LEADERBOARD</span><span id="leaderboardCount">1 PLAYER</span></div>
         <div class="live-leaderboard-body" id="liveLeaderboardBody"></div>
       </aside>
-      <section class="map-dock" id="mapDock" aria-label="Guess map">
-        <div class="map-caption">PLACE YOUR GUESS</div>
-        <button id="mapExpandBtn" title="Pin map open" aria-label="Pin map open">⤢</button>
-        <div id="guessMap"></div>
-      </section>
+
+      <div class="side-controls">
+        <button class="round-btn" id="zoomInBtn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button class="round-btn" id="zoomOutBtn" title="Zoom out" aria-label="Zoom out">−</button>
+        <button class="round-btn" id="backStartBtn" title="Back to start" aria-label="Back to start">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+        </button>
+        <button class="round-btn" id="northBtn" title="Face north" aria-label="Face north">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 6 20l6-4 6 4z"/></svg>
+        </button>
+      </div>
+
+      <div class="control-hint" id="controlHint"></div>
+
+      <div class="map-wrap" id="mapWrap">
+        <div class="map-tools">
+          <button class="round-btn" id="mapPinBtn" title="Keep map open" aria-label="Keep map open">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a6.5 6.5 0 0 0-6.5 6.5C5.5 14 12 22 12 22s6.5-8 6.5-13.5A6.5 6.5 0 0 0 12 2Zm0 9a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg>
+          </button>
+          <button class="round-btn" id="mapGrowBtn" title="Make map bigger" aria-label="Make map bigger">+</button>
+          <button class="round-btn" id="mapShrinkBtn" title="Make map smaller" aria-label="Make map smaller">−</button>
+          <button class="round-btn" id="clearGuessBtn" title="Clear pin" aria-label="Clear pin">✕</button>
+        </div>
+        <section class="map-dock" id="mapDock" aria-label="Guess map"><div id="guessMap"></div></section>
+        <button id="guessBtn" class="guess-btn" disabled><span id="guessLabel">Place your pin on the map</span></button>
+      </div>
+
       <div id="timeUpOverlay" class="time-up-overlay">TIME'S UP</div>
       <section id="roundResult" class="round-result">
-        <div class="result-head"><div><div class="eyebrow" id="resultEyebrow">Round result</div><div style="font-size:17px;font-weight:900;margin-top:4px" id="resultHeadline">Nice try!</div><div class="muted small" id="resultSubline"></div></div><div class="result-score" id="resultScore">0 pts</div></div>
+        <div class="result-head">
+          <div><div class="eyebrow" id="resultEyebrow">Round result</div><div style="font-size:18px;font-weight:800;margin-top:4px" id="resultHeadline">Nice try!</div><div class="muted small" id="resultSubline"></div></div>
+          <div class="result-score" id="resultScore">0 pts</div>
+        </div>
         <div id="resultLeaderboard"></div>
-        <div class="btn-row"><button id="nextRoundBtn" class="primary">Next round</button><span class="muted small" id="nextRoundHint"></span></div>
+        <div class="btn-row"><button id="nextRoundBtn" class="btn primary">Next round</button><span class="muted small" id="nextRoundHint"></span></div>
       </section>
-      <div class="game-controls">
-        <div class="control-hint" id="controlHint">Explore the panorama, then place your guess on the map.</div>
-        <div class="btn-row"><button id="clearGuessBtn" class="subtle">Clear pin</button><button id="guessBtn" class="primary" disabled>Make guess</button></div>
-      </div>
     </div>
   </main>
 
+  <!-- ===== FINISH ===== -->
   <main id="finishScreen" class="screen">
-    <div class="finish-wrap finish-card">
+    <div class="panel finish-card">
       <div class="eyebrow">Game complete</div>
       <h2 id="finishTitle">Well played!</h2>
       <div class="finish-total" id="finishTotal">0</div>
       <div class="muted">total points</div>
       <div id="finishLeaderboard"></div>
-      <div class="btn-row" style="justify-content:center"><button id="homeBtn" class="primary">Back to World Guesser</button></div>
+      <div class="btn-row" style="justify-content:center"><button id="homeBtn" class="btn primary">Back to home</button></div>
     </div>
   </main>
+
+  <!-- ===== MODALS ===== -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal">
+      <div class="eyebrow">Game settings</div>
+      <h2>Round setup</h2>
+      <div class="field-row">
+        <div class="field"><label for="roundCount">Rounds</label><select id="roundCount"><option value="3">3 rounds</option><option value="5" selected>5 rounds</option><option value="10">10 rounds</option></select></div>
+        <div class="field"><label for="roundSeconds">Time per round</label><select id="roundSeconds"><option value="45">45 seconds</option><option value="60">60 seconds</option><option value="90" selected>90 seconds</option><option value="120">2 minutes</option></select></div>
+      </div>
+      <div class="btn-row"><button class="btn primary" data-close-modal>Done</button></div>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="joinModal">
+    <div class="modal">
+      <div class="eyebrow">Multiplayer</div>
+      <h2>Join a room</h2>
+      <div class="field"><label for="roomCodeInput">Room code</label><input id="roomCodeInput" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" /></div>
+      <div id="joinStatus" class="status-line" aria-live="polite"></div>
+      <div class="btn-row"><button id="joinRoomBtn" class="btn primary">Join room</button><button class="btn" data-close-modal>Cancel</button></div>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="helpModal">
+    <div class="modal">
+      <div class="eyebrow">Quick guide</div>
+      <h2>How to play</h2>
+      <ol>
+        <li>Look around the street view and hunt for clues: signs, road markings, driving side, landscape.</li>
+        <li>Hover over the small map (bottom right) to enlarge it, then click to drop your pin.</li>
+        <li>Press <strong>Guess</strong> before the timer runs out. The closer you are, the more points (max 5,000).</li>
+        <li>Duos share one team pin. Multiplayer rooms hold up to 20 players.</li>
+      </ol>
+      <div class="btn-row"><button class="btn primary" data-close-modal>Got it</button></div>
+    </div>
+  </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import {
-      getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
-      collection, getDocs, onSnapshot, writeBatch
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
-    // The game is served as a real HTTPS static page (not an iframe srcdoc).
-    // Streamlit passes browser-safe client configuration in the `config` query value.
+    // ------------------------------------------------------------------
+    // Configuration (passed from Streamlit in the URL hash)
+    // ------------------------------------------------------------------
     function readAppConfig() {
       const serialized = new URLSearchParams(window.location.hash.slice(1)).get("config");
       if (!serialized) return {};
@@ -252,59 +422,33 @@
     const firebaseConfig = CONFIG.firebase || {};
     const firebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
 
-    let db = null;
-    let auth = null;
-    let uid = null;
-    let firebaseReady = false;
-    let firebaseInitializing = false;
-    let firebaseAttempted = false;
-    let map = null;
-    let marker = null;
-    let resultLayers = [];
-    let viewer = null;
-    let googlePanorama = null;
-    let googleMapsReady = false;
-    let streetViewService = null;
-    let mapillaryAssetsPromise = null;
-    let mapillaryAssetsReady = false;
-    let mapExpandTimer = null;
-    let startingRoom = false;
-    let currentScreen = "home";
-    let toastTimer = null;
-    let timerHandle = null;
-    let roomRef = null;
-    let roomCode = null;
-    let roomData = null;
-    let roomRole = "player";
-    let players = [];
-    let guesses = [];
-    let roundResults = [];
-    let roundRef = null;
-    let activeRoundNo = 0;
-    let unsubRoom = null;
-    let unsubPlayers = null;
-    let unsubGuesses = null;
-    let unsubResults = null;
-    let unsubTeamGuess = null;
-    let teamGuessData = null;
-    let processingRound = false;
-    let currentGuess = null;
-    let currentTarget = null;
-    let soloScore = 0;
-    let soloRound = 0;
-    let soloRounds = 5;
-    let soloDuration = 90;
-    let soloDeadline = 0;
-    let soloResultVisible = false;
-    let soloGuess = null;
-    let seenImageIds = new Set();
-    let mapReady = false;
-    let timeUpSequence = false;
-    let duoTeamGuessWriting = false;
-    let duoTeamGuessWritePromise = Promise.resolve();
-    let mapPointerDown = false;
+    // Firebase functions are loaded lazily (dynamic import) so that a blocked
+    // gstatic.com can never stop the rest of the game from starting.
+    let initializeApp, getAuth, signInAnonymously;
+    let getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot, writeBatch;
+
+    let db = null, auth = null, uid = null;
+    let firebaseReady = false, firebaseInitializing = false, firebaseAttempted = false;
+    let map = null, marker = null, resultLayers = [], lastReveal = null;
+    let viewer = null, googlePanorama = null, googleMapsReady = false, streetViewService = null;
+    let mapillaryAssetsPromise = null, mapillaryAssetsReady = false;
+    let startingRoom = false, currentScreen = "home", toastTimer = null, timerHandle = null;
+    let roomRef = null, roomCode = null, roomData = null, roomRole = "player";
+    let players = [], guesses = [], roundResults = [], roundRef = null, activeRoundNo = 0, loadedPanoRound = 0;
+    let unsubRoom = null, unsubPlayers = null, unsubGuesses = null, unsubResults = null, unsubTeamGuess = null;
+    let teamGuessData = null, processingRound = false;
+    let currentGuess = null, currentTarget = null, currentPanoId = null;
+    let soloScore = 0, soloRound = 0, soloRounds = 5, soloDuration = 90, soloDeadline = 0, soloResultVisible = false, soloGuess = null;
+    let seenImageIds = new Set(), mapReady = false, timeUpSequence = false;
+    let duoTeamGuessWriting = false, duoTeamGuessWritePromise = Promise.resolve();
+    let mapLevel = 1;
 
     const $ = (id) => document.getElementById(id);
+    const store = {
+      get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
+    };
+
     const CITY_ANCHORS = [
       [40.7128,-74.0060],[34.0522,-118.2437],[41.8781,-87.6298],[37.7749,-122.4194],[47.6062,-122.3321],
       [43.6532,-79.3832],[45.5019,-73.5674],[19.4326,-99.1332],[25.7617,-80.1918],[33.4484,-112.0740],
@@ -313,126 +457,151 @@
       [35.6762,139.6503],[37.5665,126.9780],[31.2304,121.4737],[22.3193,114.1694],[1.3521,103.8198],
       [13.7563,100.5018],[28.6139,77.2090],[19.0760,72.8777],[-6.2088,106.8456],[-33.8688,151.2093],
       [-37.8136,144.9631],[-36.8509,174.7645],[-41.2865,174.7762],[-23.5505,-46.6333],[-34.6037,-58.3816],
-      [-22.9068,-43.1729],[-33.4489,-70.6693],[-12.0464,-77.0428],[4.7110,-74.0721],[ -0.1807,-78.4678],
-      [30.0444,31.2357],[6.5244,3.3792],[-1.2921,36.8219],[ -26.2041,28.0473],[ -33.9249,18.4241],
-      [25.2048,55.2708],[24.7136,46.6753],[41.0082,28.9784],[32.0853,34.7818],[ -34.9285,138.6007],
+      [-22.9068,-43.1729],[-33.4489,-70.6693],[-12.0464,-77.0428],[4.7110,-74.0721],[-0.1807,-78.4678],
+      [30.0444,31.2357],[6.5244,3.3792],[-1.2921,36.8219],[-26.2041,28.0473],[-33.9249,18.4241],
+      [25.2048,55.2708],[24.7136,46.6753],[41.0082,28.9784],[32.0853,34.7818],[-34.9285,138.6007],
       [39.9042,116.4074],[23.1291,113.2644],[14.5995,120.9842],[10.8231,106.6297],[21.0285,105.8542],
       [35.1796,129.0756],[43.0618,141.3545],[42.3601,-71.0589],[38.9072,-77.0369],[39.7392,-104.9903],
       [29.7604,-95.3698],[32.7767,-96.7970],[49.2827,-123.1207],[51.0447,-114.0719],[45.5152,-122.6784],
       [48.2082,16.3738],[47.3769,8.5417],[46.2044,6.1432],[45.4642,9.1900],[37.9838,23.7275]
     ];
 
+    // ------------------------------------------------------------------
+    // Small helpers
+    // ------------------------------------------------------------------
     function escapeHtml(value) {
       return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
     }
-    function notify(message, isError=false) {
+    function notify(message, isError = false) {
       const el = $("toast");
       el.textContent = message;
       el.style.display = "block";
-      el.style.borderColor = isError ? "#a04b4b" : "#49614f";
+      el.style.borderColor = isError ? "#d65a6e" : "#8f7cf0";
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { el.style.display = "none"; }, 3600);
+      toastTimer = setTimeout(() => { el.style.display = "none"; }, 4200);
     }
-    function setHomeStatus(message, error=false) {
-      const el = $("homeStatus"); el.textContent = message; el.className = error ? "status-line error" : "status-line";
+    function setHomeStatus(message, error = false) {
+      for (const id of ["homeStatus", "joinStatus"]) {
+        const el = $(id); if (!el) continue;
+        el.textContent = message; el.className = error ? "status-line error" : "status-line";
+      }
     }
     function getPlayerName() {
-      const name = ($("playerName").value || "Player").trim().slice(0,18) || "Player";
-      localStorage.setItem("worldGuesserName", name);
+      const name = ($("playerName").value || "Player").trim().slice(0, 18) || "Player";
+      store.set("worldGuesserName", name);
       return name;
     }
-        function setScreen(name) {
+    const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+    function openModal(id) { closeModals(); $(id).classList.add("open"); }
+    function closeModals() { document.querySelectorAll(".modal-backdrop.open").forEach(m => m.classList.remove("open")); }
+    function updateSettingsSummary() {
+      const r = $("roundCount").value, s = Number($("roundSeconds").value);
+      $("settingsSummary").textContent = `${r} rounds · ${s} seconds`;
+      store.set("worldGuesserRounds", r); store.set("worldGuesserSeconds", String(s));
+    }
+    function setScreen(name) {
       currentScreen = name;
+      closeModals();
       document.body.classList.toggle("game-active", name === "game");
       ["homeScreen","lobbyScreen","gameScreen","finishScreen"].forEach(id => $(id).classList.remove("active"));
       const id = ({home:"homeScreen",lobby:"lobbyScreen",game:"gameScreen",finish:"finishScreen"})[name];
       if (id) $(id).classList.add("active");
       if (name === "game") [100, 350, 700].forEach(ms => setTimeout(() => refreshMapSize(), ms));
     }
-        function showSetupStatus() {
+    function imageryReady() {
+      return USE_GOOGLE_MAPS
+        ? Boolean(googleMapsReady && window.__worldGuesserGoogleLibraries?.StreetViewService && window.__worldGuesserGoogleLibraries?.StreetViewPanorama)
+        : Boolean(MAPILLARY_TOKEN && mapillaryAssetsReady);
+    }
+    function showSetupStatus() {
       const notes = [];
       if (!GOOGLE_MAPS_API_KEY && !MAPILLARY_TOKEN) notes.push("Add GOOGLE_MAPS_API_KEY or MAPILLARY_ACCESS_TOKEN in Streamlit secrets to enable street imagery.");
-      if (GOOGLE_MAPS_API_KEY && !googleMapsReady) notes.push("Google Maps is initializing or did not load. Check the Maps JavaScript API, billing, and key restrictions.");
-      if (!firebaseConfigured) notes.push("Firebase is required for Duos and Multiplayer room codes.");
-      else if (firebaseInitializing) notes.push("Connecting multiplayer services… Singleplayer remains available.");
-      else if (firebaseAttempted && !firebaseReady) notes.push("Multiplayer sign-in is unavailable. Check Firebase anonymous authentication and authorized domains.");
-      const provider = GOOGLE_MAPS_API_KEY ? "Google Street View + Google Maps" : "Mapillary + OpenStreetMap";
-      if (!notes.length) notes.push(`Ready · ${provider} · Duos and Multiplayer enabled.`);
+      if (GOOGLE_MAPS_API_KEY && !googleMapsReady) notes.push("Google Maps is still loading, or failed to load (check the Maps JavaScript API, billing and key restrictions).");
+      if (!firebaseConfigured) notes.push("Firebase is required for Duos and Multiplayer.");
+      else if (firebaseInitializing) notes.push("Connecting multiplayer services…");
+      else if (firebaseAttempted && !firebaseReady) notes.push("Multiplayer is unavailable (Firebase sign-in or network problem). Singleplayer still works.");
+      const provider = GOOGLE_MAPS_API_KEY ? "Google Street View" : "Mapillary + OpenStreetMap";
+      if (!notes.length) notes.push(`Ready · ${provider} · Duos and Multiplayer enabled`);
       $("setupNote").textContent = notes.join(" ");
       $("createDuoBtn").disabled = !firebaseReady || !imageryReady();
       $("createRoomBtn").disabled = !firebaseReady || !imageryReady();
+      $("joinMenuBtn").disabled = !firebaseReady;
       $("joinRoomBtn").disabled = !firebaseReady;
     }
-        async function loadGoogleMapsApi() {
-      // Load the Maps JavaScript API asynchronously, then explicitly import
-      // the libraries used by this game. StreetViewService and
-      // StreetViewPanorama are exported by the "streetView" library.
+
+    // ------------------------------------------------------------------
+    // Pin graphics (used on both Google Maps and Leaflet)
+    // ------------------------------------------------------------------
+    function pinSvg(fill = "#e8344e", flag = false) {
+      const glyph = flag
+        ? `<path d="M14.6 11.5v10M14.6 11.8l6.4 2.3-6.4 2.4z" fill="${fill}" stroke="${fill}" stroke-width="1.6" stroke-linejoin="round"/>`
+        : "";
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44"><path d="M17 43C17 43 3 27 3 16.5A14 14 0 0 1 31 16.5C31 27 17 43 17 43Z" fill="${fill}" stroke="#fff" stroke-width="2.5"/><circle cx="17" cy="16.5" r="${flag ? 8 : 5.5}" fill="#fff"/>${glyph}</svg>`;
+    }
+    function googlePinIcon(fill, flag = false) {
+      return {
+        url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSvg(fill, flag)),
+        scaledSize: new google.maps.Size(34, 44),
+        anchor: new google.maps.Point(17, 43)
+      };
+    }
+    function leafletPinIcon(fill, flag = false) {
+      return L.divIcon({html: pinSvg(fill, flag), className: "wg-pin", iconSize: [34, 44], iconAnchor: [17, 43], popupAnchor: [0, -40]});
+    }
+
+    // ------------------------------------------------------------------
+    // Third-party loaders
+    // ------------------------------------------------------------------
+    async function loadGoogleMapsApi() {
       if (window.__worldGuesserGoogleLibraries?.Map && window.__worldGuesserGoogleLibraries?.StreetViewService) return;
       if (window.__worldGuesserGoogleMapsPromise) return window.__worldGuesserGoogleMapsPromise;
 
-      window.__worldGuesserGoogleMapsPromise = new Promise((resolve,reject) => {
+      window.__worldGuesserGoogleMapsPromise = new Promise((resolve, reject) => {
         let settled = false;
         const timeout = setTimeout(() => fail(new Error(
-          "Google Maps did not finish loading within 25 seconds. Check the browser network, API key restrictions, billing, and Maps JavaScript API enablement."
+          "Google Maps did not finish loading within 25 seconds. Check the network, API key restrictions, billing and that the Maps JavaScript API is enabled."
         )), 25000);
-
-        const cleanup = () => {
-          clearTimeout(timeout);
-          try { delete window.__worldGuesserGoogleMapsApiCallback; } catch (_) {}
-        };
+        const cleanup = () => { clearTimeout(timeout); try { delete window.__worldGuesserGoogleMapsApiCallback; } catch (_) {} };
         const fail = (error) => {
-          if (settled) return;
-          settled = true;
-          cleanup();
+          if (settled) return; settled = true; cleanup();
+          window.__worldGuesserGoogleMapsPromise = null; // allow a retry
           reject(error instanceof Error ? error : new Error(String(error)));
         };
         const succeed = async () => {
           if (settled) return;
           try {
-            if (!window.google?.maps?.importLibrary) {
-              throw new Error("Google Maps loaded without importLibrary. Check the Maps JavaScript API version and whether the school network modified the script.");
-            }
+            if (!window.google?.maps?.importLibrary) throw new Error("Google Maps loaded without importLibrary (a network filter may have modified the script).");
             const [mapsLibrary, streetViewLibrary] = await Promise.all([
               window.google.maps.importLibrary("maps"),
               window.google.maps.importLibrary("streetView")
             ]);
+            // "marker" provides google.maps.Marker and "core" provides LatLngBounds / Size / Point / SymbolPath.
+            // They are only available globally after being imported when loading="async".
+            await Promise.all([
+              window.google.maps.importLibrary("marker").catch(e => console.warn("marker library:", e)),
+              window.google.maps.importLibrary("core").catch(e => console.warn("core library:", e))
+            ]);
             if (!mapsLibrary?.Map || !streetViewLibrary?.StreetViewService || !streetViewLibrary?.StreetViewPanorama) {
               throw new Error("Google Maps loaded, but its Maps or Street View library did not expose the required classes.");
             }
+            // Copy the classes explicitly: library objects are not guaranteed to be spreadable.
             window.__worldGuesserGoogleLibraries = {
-              ...mapsLibrary,
+              Map: mapsLibrary.Map,
               StreetViewService: streetViewLibrary.StreetViewService,
               StreetViewPanorama: streetViewLibrary.StreetViewPanorama
             };
-            settled = true;
-            cleanup();
-            resolve();
-          } catch (error) {
-            fail(error);
-          }
+            settled = true; cleanup(); resolve();
+          } catch (error) { fail(error); }
         };
-
         window.__worldGuesserGoogleMapsApiCallback = succeed;
-        window.gm_authFailure = () => fail(new Error(
-          "Google rejected this Maps API key. Check the key's website restrictions, API restrictions, project, and billing status."
-        ));
-
+        window.gm_authFailure = () => fail(new Error("Google rejected this Maps API key. Check website restrictions, API restrictions, project and billing."));
         const script = document.createElement("script");
-        const params = new URLSearchParams({
-          key: GOOGLE_MAPS_API_KEY,
-          v: "weekly",
-          loading: "async",
-          callback: "__worldGuesserGoogleMapsApiCallback"
-        });
+        const params = new URLSearchParams({ key: GOOGLE_MAPS_API_KEY, v: "weekly", loading: "async", callback: "__worldGuesserGoogleMapsApiCallback" });
         script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
-        script.async = true;
-        script.defer = true;
-        script.onerror = () => fail(new Error(
-          "The Google Maps JavaScript API script could not be downloaded. The school network or browser may be blocking maps.googleapis.com."
-        ));
+        script.async = true; script.defer = true;
+        script.onerror = () => fail(new Error("The Google Maps script could not be downloaded. A network filter may be blocking maps.googleapis.com."));
         document.head.appendChild(script);
       });
-
       return window.__worldGuesserGoogleMapsPromise;
     }
 
@@ -440,92 +609,74 @@
       if (document.getElementById(id)) return Promise.resolve();
       return new Promise((resolve, reject) => {
         const link = document.createElement("link");
-        link.id = id;
-        link.rel = "stylesheet";
-        link.href = href;
+        link.id = id; link.rel = "stylesheet"; link.href = href;
         link.onload = () => resolve();
         link.onerror = () => reject(new Error(`Could not load stylesheet: ${href}`));
         document.head.appendChild(link);
       });
     }
-
     function addScriptOnce(id, src, isReady, timeoutMs = 18000) {
       if (isReady()) return Promise.resolve();
       const existing = document.getElementById(id);
-      if (existing?.dataset.loaded === "true" && isReady()) return Promise.resolve();
       return new Promise((resolve, reject) => {
         const script = existing || document.createElement("script");
         let settled = false;
-        const timeout = setTimeout(() => finish(new Error(`Timed out loading ${src}`)), timeoutMs);
         const finish = error => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeout);
-          script.removeEventListener("load", onLoad);
-          script.removeEventListener("error", onError);
-          if (error) reject(error);
-          else resolve();
+          if (settled) return; settled = true; clearTimeout(timeout);
+          script.removeEventListener("load", onLoad); script.removeEventListener("error", onError);
+          if (error) reject(error); else resolve();
         };
-        const onLoad = () => {
-          script.dataset.loaded = "true";
-          if (!isReady()) finish(new Error(`The script loaded but did not expose its expected library: ${src}`));
-          else finish();
-        };
-        const onError = () => finish(new Error(`The browser could not load ${src}. Check whether this content delivery network is blocked.`));
+        const timeout = setTimeout(() => finish(new Error(`Timed out loading ${src}`)), timeoutMs);
+        const onLoad = () => { if (!isReady()) finish(new Error(`The script loaded but did not expose its library: ${src}`)); else finish(); };
+        const onError = () => finish(new Error(`The browser could not load ${src}. A network filter may be blocking this host.`));
         script.addEventListener("load", onLoad, {once:true});
         script.addEventListener("error", onError, {once:true});
-        if (!existing) {
-          script.id = id;
-          script.src = src;
-          script.async = true;
-          document.head.appendChild(script);
-        }
+        if (!existing) { script.id = id; script.src = src; script.async = true; document.head.appendChild(script); }
       });
     }
-
     async function ensureMapillaryAssets() {
       if (USE_GOOGLE_MAPS) return;
       if (mapillaryAssetsReady && window.L && window.mapillary?.Viewer) return;
       if (mapillaryAssetsPromise) return mapillaryAssetsPromise;
       mapillaryAssetsPromise = (async () => {
-        // Load Mapillary + Leaflet only when Mapillary is the selected provider.
-        // Loading MapillaryJS on a Google-only session causes irrelevant API calls
-        // and can produce noisy 404s on the Streamlit origin.
         await Promise.all([
-          addStylesheetOnce("crossroads-leaflet-css", "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"),
-          addStylesheetOnce("crossroads-mapillary-css", "https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css"),
-          addScriptOnce("crossroads-leaflet-js", "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js", () => Boolean(window.L)),
-          addScriptOnce("crossroads-mapillary-js", "https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js", () => Boolean(window.mapillary?.Viewer))
+          addStylesheetOnce("wg-leaflet-css", "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"),
+          addStylesheetOnce("wg-mapillary-css", "https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css"),
+          addScriptOnce("wg-leaflet-js", "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js", () => Boolean(window.L)),
+          addScriptOnce("wg-mapillary-js", "https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js", () => Boolean(window.mapillary?.Viewer))
         ]);
         mapillaryAssetsReady = true;
-      })().catch(error => {
-        mapillaryAssetsPromise = null;
-        throw error;
-      });
+      })().catch(error => { mapillaryAssetsPromise = null; throw error; });
       return mapillaryAssetsPromise;
     }
 
     async function initializeFirebase() {
       if (!firebaseConfigured) return;
-      firebaseAttempted = true;
-      firebaseInitializing = true;
-      showSetupStatus();
+      firebaseAttempted = true; firebaseInitializing = true; showSetupStatus();
       let authTimeout = null;
+      const withTimeout = (promise, ms, label) => Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms/1000)} seconds.`)), ms))
+      ]);
       try {
+        const base = "https://www.gstatic.com/firebasejs/10.14.1/";
+        const [appMod, authMod, fsMod] = await withTimeout(Promise.all([
+          import(base + "firebase-app.js"),
+          import(base + "firebase-auth.js"),
+          import(base + "firebase-firestore.js")
+        ]), 20000, "Loading the Firebase libraries");
+        ({initializeApp} = appMod);
+        ({getAuth, signInAnonymously} = authMod);
+        ({getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot, writeBatch} = fsMod);
         const app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        const credential = await Promise.race([
-          signInAnonymously(auth),
-          new Promise((_, reject) => {
-            authTimeout = setTimeout(() => reject(new Error("Firebase anonymous sign-in timed out after 15 seconds.")), 15000);
-          })
-        ]);
+        const credential = await withTimeout(signInAnonymously(auth), 15000, "Firebase anonymous sign-in");
         uid = credential.user.uid;
         firebaseReady = true;
       } catch (error) {
         console.error("Firebase multiplayer initialization failed:", error);
-        setHomeStatus("Firebase multiplayer sign-in failed: " + (error?.message || String(error)) + " Solo play does not require Firebase.", true);
+        setHomeStatus("Multiplayer unavailable: " + (error?.message || String(error)) + " Singleplayer does not need Firebase.", true);
       } finally {
         if (authTimeout) clearTimeout(authTimeout);
         firebaseInitializing = false;
@@ -533,141 +684,205 @@
       }
     }
 
-    function imageryReady() {
-      return USE_GOOGLE_MAPS
-        ? Boolean(googleMapsReady && window.__worldGuesserGoogleLibraries?.StreetViewService && window.__worldGuesserGoogleLibraries?.StreetViewPanorama)
-        : Boolean(MAPILLARY_TOKEN && mapillaryAssetsReady);
+    // ------------------------------------------------------------------
+    // Home-screen globe (d3 orthographic projection on a canvas)
+    // ------------------------------------------------------------------
+    async function initGlobe() {
+      const canvas = $("globeCanvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width, H = canvas.height, R = W * 0.47, cx = W / 2, cy = H / 2;
+      let land = null, d3ref = null;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      let lon = -40, last = performance.now();
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        const ocean = ctx.createRadialGradient(cx - R*.35, cy - R*.4, R*.1, cx, cy, R);
+        ocean.addColorStop(0, "#74b0ff"); ocean.addColorStop(.45, "#3b7ad6"); ocean.addColorStop(1, "#1c3f94");
+        if (d3ref) {
+          const projection = d3ref.geoOrthographic().scale(R).translate([cx, cy]).clipAngle(90).rotate([lon, -22]);
+          const path = d3ref.geoPath(projection, ctx);
+          ctx.beginPath(); path({type: "Sphere"}); ctx.fillStyle = ocean; ctx.fill();
+          if (land) {
+            const grass = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+            grass.addColorStop(0, "#74e06a"); grass.addColorStop(1, "#2f9a44");
+            ctx.beginPath(); path(land); ctx.fillStyle = grass; ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = "rgba(24,110,48,.9)"; ctx.stroke();
+          }
+          const shade = ctx.createRadialGradient(cx - R*.38, cy - R*.42, R*.15, cx, cy, R*1.05);
+          shade.addColorStop(0, "rgba(255,255,255,.22)"); shade.addColorStop(.5, "rgba(255,255,255,0)"); shade.addColorStop(1, "rgba(10,8,60,.6)");
+          ctx.beginPath(); path({type: "Sphere"}); ctx.fillStyle = shade; ctx.fill();
+        } else {
+          // Fallback if the d3 CDN is blocked: plain shaded sphere.
+          ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = ocean; ctx.fill();
+        }
+      }
+      function frame(now) {
+        const dt = Math.min(64, now - last); last = now;
+        if (currentScreen === "home" && !document.hidden) { lon += dt * 0.008; draw(); }
+        requestAnimationFrame(frame);
+      }
+      draw();
+      try {
+        await Promise.all([
+          addScriptOnce("wg-d3", "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js", () => Boolean(window.d3?.geoOrthographic)),
+          addScriptOnce("wg-topojson", "https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js", () => Boolean(window.topojson?.feature))
+        ]);
+        const topo = await (await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json")).json();
+        land = window.topojson.feature(topo, topo.objects.land);
+        d3ref = window.d3;
+      } catch (error) {
+        console.warn("Globe data could not be loaded; showing a plain globe.", error);
+      }
+      draw();
+      if (!reduceMotion) requestAnimationFrame(frame);
     }
+
+    // ------------------------------------------------------------------
+    // Guess map
+    // ------------------------------------------------------------------
     function refreshMapSize() {
       if (!map) return;
-      if (USE_GOOGLE_MAPS && window.google?.maps) {
-        window.google.maps.event.trigger(map, "resize");
-      } else if (map.invalidateSize) {
-        map.invalidateSize({pan:false});
-      }
+      if (USE_GOOGLE_MAPS && window.google?.maps) window.google.maps.event.trigger(map, "resize");
+      else if (map.invalidateSize) map.invalidateSize({pan:false});
     }
     function setGuessMapView(lat, lng, zoom) {
       if (!map) return;
-      if (USE_GOOGLE_MAPS) {
-        map.setCenter({lat, lng});
-        map.setZoom(zoom);
-      } else {
-        map.setView([lat,lng],zoom);
-      }
+      if (USE_GOOGLE_MAPS) { map.setCenter({lat, lng}); map.setZoom(zoom); }
+      else map.setView([lat, lng], zoom);
     }
-    function engageMapBriefly() {
-      // Kept as a harmless compatibility hook for provider map events.
-      const dock = $("mapDock");
-      if (!dock) return;
-      dock.classList.add("dragging");
-      clearTimeout(mapExpandTimer);
-      setTimeout(() => {
-        if (!dock.classList.contains("locked") && !dock.matches(":hover")) dock.classList.remove("dragging");
-        refreshMapSize();
-      }, 700);
+    function removeGuessMarker() {
+      if (marker && map) { if (USE_GOOGLE_MAPS) marker.setMap(null); else map.removeLayer(marker); }
+      marker = null;
     }
     function setGuessMarker(lat, lng) {
       if (!map) return;
-      if (marker) {
-        if (USE_GOOGLE_MAPS) marker.setMap(null);
-        else map.removeLayer(marker);
-      }
-      if (USE_GOOGLE_MAPS) marker = new google.maps.Marker({position:{lat,lng},map,title:"Your guess"});
-      else marker = L.marker([lat,lng]).addTo(map).bindPopup("Your guess");
+      removeGuessMarker();
+      if (USE_GOOGLE_MAPS) marker = new google.maps.Marker({position:{lat,lng}, map, title:"Your guess", icon: googlePinIcon("#e8344e")});
+      else marker = L.marker([lat,lng], {icon: leafletPinIcon("#e8344e")}).addTo(map);
     }
     async function handleMapGuess(lat, lng) {
       if (!canPlaceGuess()) return;
-      const nextGuess = {lat:Number(lat),lng:Number(lng)};
+      const nextGuess = {lat:Number(lat), lng:Number(lng)};
       if (!Number.isFinite(nextGuess.lat) || !Number.isFinite(nextGuess.lng)) return;
       currentGuess = nextGuess;
-      setGuessMarker(currentGuess.lat,currentGuess.lng);
-      $("guessBtn").disabled = false;
-      $("controlHint").textContent = roomData?.mode === "duos"
-        ? "Shared team pin updated. Either teammate can lock it in."
-        : "Pin placed. Press Make guess when you are ready.";
+      setGuessMarker(currentGuess.lat, currentGuess.lng);
+      $("controlHint").textContent = roomData?.mode === "duos" ? "Shared team pin updated. Either teammate can lock it in." : "";
+      refreshGuessBtn();
       if (roomData?.mode === "duos" && roundRef) {
-        // Serialize rapid map clicks so the last pin is guaranteed to be the
-        // one saved to Firestore before either teammate locks the guess.
         const pinToWrite = {...nextGuess};
         duoTeamGuessWriting = true;
-        duoTeamGuessWritePromise = duoTeamGuessWritePromise
-          .catch(() => {})
-          .then(() => setDoc(doc(roundRef,"teamGuess","shared"),{
-            lat:pinToWrite.lat,lng:pinToWrite.lng,updatedBy:uid,updatedAt:Date.now()
-          }));
-        try {
-          await duoTeamGuessWritePromise;
-        } catch (error) {
-          console.error("Could not synchronize the duo pin:",error);
-          notify("Could not sync the shared duo pin: " + error.message,true);
-        } finally {
-          duoTeamGuessWriting = false;
-        }
+        duoTeamGuessWritePromise = duoTeamGuessWritePromise.catch(() => {}).then(() => setDoc(doc(roundRef,"teamGuess","shared"), {
+          lat:pinToWrite.lat, lng:pinToWrite.lng, updatedBy:uid, updatedAt:Date.now()
+        }));
+        try { await duoTeamGuessWritePromise; }
+        catch (error) { console.error("Could not synchronize the duo pin:", error); notify("Could not sync the shared duo pin: " + error.message, true); }
+        finally { duoTeamGuessWriting = false; }
       }
     }
-        function ensureMap() {
+    function ensureMap() {
       if (mapReady) return;
       if (USE_GOOGLE_MAPS) {
-        if (!googleMapsReady || !window.google?.maps) throw new Error("Google Maps has not loaded. Check GOOGLE_MAPS_API_KEY, Maps JavaScript API, billing, and allowed website domains.");
+        if (!googleMapsReady || !window.google?.maps) throw new Error("Google Maps has not loaded. Check GOOGLE_MAPS_API_KEY, the Maps JavaScript API, billing and allowed website domains.");
         const MapsLibrary = window.__worldGuesserGoogleLibraries;
         map = new MapsLibrary.Map($("guessMap"), {
-          center:{lat:20,lng:0},zoom:2,mapTypeId:"roadmap",
-          streetViewControl:false,mapTypeControl:false,fullscreenControl:false,
-          clickableIcons:false,gestureHandling:"greedy"
+          center:{lat:20,lng:0}, zoom:2, minZoom:1, mapTypeId:"roadmap",
+          streetViewControl:false, mapTypeControl:false, fullscreenControl:false, zoomControl:true,
+          clickableIcons:false, gestureHandling:"greedy", keyboardShortcuts:false
         });
         map.addListener("click", event => {
           if (!canPlaceGuess() || !event.latLng) return;
-          void handleMapGuess(event.latLng.lat(),event.latLng.lng());
+          void handleMapGuess(event.latLng.lat(), event.latLng.lng());
         });
-        map.addListener("dragstart", engageMapBriefly);
-        map.addListener("zoom_changed", engageMapBriefly);
-        mapReady = true;
       } else {
         if (!window.L) throw new Error("The map library has not loaded.");
-        map = L.map("guessMap",{worldCopyJump:true,zoomControl:true,minZoom:2}).setView([20,0],2);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-          maxZoom:19,attribution:"&copy; <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a>"
+        map = L.map("guessMap", {worldCopyJump:true, zoomControl:true, minZoom:2}).setView([20,0], 2);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom:19, attribution:"&copy; <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a>"
         }).addTo(map);
-        map.on("click",event=>{ if (canPlaceGuess()) void handleMapGuess(event.latlng.lat,event.latlng.lng); });
-        map.on("dragstart",engageMapBriefly);
-        map.on("zoomstart",engageMapBriefly);
-        mapReady = true;
+        map.on("click", event => { if (canPlaceGuess()) void handleMapGuess(event.latlng.lat, event.latlng.lng); });
       }
-      const dock = $("mapDock");
-      if (dock && !dock.dataset.bound) {
-        dock.dataset.bound = "1";
-        dock.addEventListener("pointerdown",()=>{mapPointerDown=true;dock.classList.add("dragging");});
-        dock.addEventListener("pointerleave",()=>{
-          if (!mapPointerDown && !dock.classList.contains("locked")) dock.classList.remove("dragging");
-          setTimeout(refreshMapSize,240);
-        });
-        dock.addEventListener("transitionend",refreshMapSize);
-        const release = () => {
-          mapPointerDown=false;
-          clearTimeout(mapExpandTimer);
-          mapExpandTimer = setTimeout(()=>{
-            if (!dock.classList.contains("locked") && !dock.matches(":hover")) dock.classList.remove("dragging");
-            refreshMapSize();
-          },180);
-        };
-        window.addEventListener("pointerup",release);
-        window.addEventListener("pointercancel",release);
-      }
+      mapReady = true;
       refreshMapSize();
     }
-        function clearMapLayers() {
+    function clearMapLayers() {
       if (!map) return;
-      if (USE_GOOGLE_MAPS) {
-        if (marker) { marker.setMap(null); marker = null; }
-        resultLayers.forEach(layer => layer.setMap(null));
-      } else {
-        if (marker) { map.removeLayer(marker); marker = null; }
-        resultLayers.forEach(layer => map.removeLayer(layer));
-      }
+      removeGuessMarker();
+      resultLayers.forEach(layer => { if (USE_GOOGLE_MAPS) layer.setMap(null); else map.removeLayer(layer); });
       resultLayers = [];
       currentGuess = null;
-      $("guessBtn").disabled = true;
+      refreshGuessBtn();
     }
+    function setResultMode(on) {
+      $("mapWrap").classList.toggle("result", on);
+      $("gameStage").classList.toggle("result-mode", on);
+      if (on) $("mapWrap").classList.remove("peek");
+      [0, 120, 400].forEach(ms => setTimeout(refreshMapSize, ms));
+    }
+    function fitReveal() {
+      if (!map || !lastReveal) return;
+      refreshMapSize();
+      const pts = [lastReveal.target, ...lastReveal.guessList.filter(g => g.lat != null && g.lng != null)];
+      const lats = pts.map(p => p.lat), lngs = pts.map(p => p.lng);
+      const spread = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs));
+      if (pts.length < 2 || spread < 0.01) { setGuessMapView(lastReveal.target.lat, lastReveal.target.lng, pts.length < 2 ? 5 : 14); return; }
+      if (USE_GOOGLE_MAPS) {
+        const bounds = new google.maps.LatLngBounds();
+        pts.forEach(p => bounds.extend({lat:p.lat, lng:p.lng}));
+        map.fitBounds(bounds, 70);
+      } else {
+        map.fitBounds(pts.map(p => [p.lat, p.lng]), {padding:[60,60], maxZoom:12});
+      }
+    }
+    function drawReveal(target, guessList = []) {
+      ensureMap();
+      setResultMode(true);
+      clearMapLayers();
+      if (USE_GOOGLE_MAPS) {
+        const targetPosition = {lat:target.lat, lng:target.lng};
+        resultLayers.push(new google.maps.Marker({position:targetPosition, map, title:"Actual location", icon: googlePinIcon("#2f9b44", true), zIndex: 10}));
+        guessList.forEach(g => {
+          if (g.lat == null || g.lng == null) return;
+          const position = {lat:g.lat, lng:g.lng};
+          const guessMarker = new google.maps.Marker({position, map, title:g.name || "Guess", icon: googlePinIcon("#e8344e")});
+          const line = new google.maps.Polyline({
+            path:[position, targetPosition], map, strokeOpacity:0,
+            icons:[{icon:{path:"M 0,-1 0,1", strokeOpacity:1, strokeColor:"#ffffff", scale:3}, offset:"0", repeat:"14px"}]
+          });
+          resultLayers.push(guessMarker, line);
+        });
+      } else {
+        resultLayers.push(L.marker([target.lat, target.lng], {icon: leafletPinIcon("#2f9b44", true)}).addTo(map).bindPopup("Actual location"));
+        guessList.forEach(g => {
+          if (g.lat == null || g.lng == null) return;
+          const guessMarker = L.marker([g.lat, g.lng], {icon: leafletPinIcon("#e8344e")}).addTo(map).bindPopup(escapeHtml(g.name || "Guess"));
+          const line = L.polyline([[g.lat, g.lng], [target.lat, target.lng]], {color:"#ffffff", weight:3, dashArray:"6 8", opacity:.95}).addTo(map);
+          resultLayers.push(guessMarker, line);
+        });
+      }
+      lastReveal = {target, guessList};
+      fitReveal();
+      setTimeout(fitReveal, 150); setTimeout(fitReveal, 500);
+    }
+
+    // ------------------------------------------------------------------
+    // Scoring
+    // ------------------------------------------------------------------
+    function distanceKm(aLat, aLng, bLat, bLng) {
+      const R = 6371.0088, rad = x => x * Math.PI / 180;
+      const dLat = rad(bLat - aLat), dLng = rad(bLng - aLng);
+      const q = Math.sin(dLat/2)**2 + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng/2)**2;
+      return 2 * R * Math.asin(Math.sqrt(Math.min(1, q)));
+    }
+    function scoreForDistance(km) {
+      if (km <= 0.025) return 5000;
+      return Math.max(0, Math.round(5000 * Math.exp(-km / 1492.7)));
+    }
+
+    // ------------------------------------------------------------------
+    // Guess button state (single source of truth)
+    // ------------------------------------------------------------------
     function canSubmitGuess() {
       if (currentScreen !== "game") return false;
       if (roomData && (roomData.status !== "playing" || guesses.some(g => g.uid === uid))) return false;
@@ -676,99 +891,55 @@
     }
     function canPlaceGuess() {
       if (!canSubmitGuess()) return false;
-      // Once either teammate locks the shared Duos guess, freeze the map pin.
-      // The other teammate can still confirm it with the Lock team guess button.
       if (roomData?.mode === "duos" && guesses.length > 0) return false;
       return true;
     }
-    function setGameStatus(message) { $("gameStatusPill").textContent = message; }
-    function formatTime(seconds) {
-      const s = Math.max(0, Math.ceil(seconds));
-      return `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
-    }
-    function distanceKm(aLat,aLng,bLat,bLng) {
-      const R = 6371.0088, rad = x => x * Math.PI / 180;
-      const dLat = rad(bLat-aLat), dLng = rad(bLng-aLng);
-      const q = Math.sin(dLat/2)**2 + Math.cos(rad(aLat))*Math.cos(rad(bLat))*Math.sin(dLng/2)**2;
-      return 2*R*Math.asin(Math.sqrt(Math.min(1,q)));
-    }
-    function scoreForDistance(km) {
-      if (km <= 0.025) return 5000;
-      return Math.max(0, Math.round(5000 * Math.exp(-km / 1492.7)));
-    }
-    function drawReveal(target, guessList=[]) {
-      ensureMap();
-      clearMapLayers();
-      if (USE_GOOGLE_MAPS) {
-        const bounds = new google.maps.LatLngBounds();
-        const targetPosition = {lat:target.lat,lng:target.lng};
-        const targetMarker = new google.maps.Marker({
-          position:targetPosition,map,title:"Actual location",
-          icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:"#f4cf76",fillOpacity:1,strokeColor:"#243326",strokeWeight:2}
-        });
-        resultLayers.push(targetMarker); bounds.extend(targetPosition);
-        guessList.forEach(g => {
-          if (g.lat == null || g.lng == null) return;
-          const position = {lat:g.lat,lng:g.lng};
-          const guessMarker = new google.maps.Marker({position,map,title:g.name||"Guess"});
-          const line = new google.maps.Polyline({path:[position,targetPosition],map,strokeColor:"#f4cf76",strokeOpacity:.9,strokeWeight:2});
-          resultLayers.push(guessMarker,line); bounds.extend(position);
-        });
-        if (guessList.some(g=>g.lat!=null && g.lng!=null)) map.fitBounds(bounds,45);
-        else { map.setCenter(targetPosition); map.setZoom(6); }
-      } else {
-        const bounds = [];
-        const targetMarker = L.circleMarker([target.lat,target.lng], {radius:9,color:"#f4cf76",weight:3,fillColor:"#f4cf76",fillOpacity:.95}).addTo(map).bindPopup("Actual location");
-        resultLayers.push(targetMarker); bounds.push([target.lat,target.lng]);
-        guessList.forEach((g,i) => {
-          if (g.lat == null || g.lng == null) return;
-          const guessMarker = L.circleMarker([g.lat,g.lng], {radius:7,color:"#6aa9ff",weight:2,fillColor:"#6aa9ff",fillOpacity:.9}).addTo(map).bindPopup(escapeHtml(g.name || "Guess"));
-          const line = L.polyline([[g.lat,g.lng],[target.lat,target.lng]], {color:"#f4cf76",weight:2,dashArray:"6 7",opacity:.85}).addTo(map);
-          resultLayers.push(guessMarker,line); bounds.push([g.lat,g.lng]);
-        });
-        if (bounds.length > 1) map.fitBounds(bounds,{padding:[35,35],maxZoom:7});
-        else map.setView([target.lat,target.lng],6);
+    function refreshGuessBtn() {
+      const btn = $("guessBtn"), label = $("guessLabel"), clear = $("clearGuessBtn");
+      if (!btn) return;
+      const isDuo = roomData?.mode === "duos";
+      const submitted = roomData ? guesses.some(g => g.uid === uid) : false;
+      const roundOver = roomData ? roomData.status !== "playing" : soloResultVisible;
+      let text, disabled, ready = false;
+      if (roundOver) { text = "Round over"; disabled = true; }
+      else if (submitted) { text = isDuo ? "Team guess locked" : "Guess locked"; disabled = true; }
+      else if (timeUpSequence) { text = "Time's up"; disabled = true; }
+      else if (!currentGuess) { text = "Place your pin on the map"; disabled = true; }
+      else {
+        ready = true; disabled = !canSubmitGuess();
+        text = isDuo ? (guesses.length > 0 ? "Confirm team guess" : "Lock team guess") : "Guess";
       }
-    }
-    function addGuessMarker(lat,lng) {
-      currentGuess = {lat,lng};
-      if (marker) {
-        if (USE_GOOGLE_MAPS) marker.setMap(null);
-        else map.removeLayer(marker);
-      }
-      if (USE_GOOGLE_MAPS) marker = new google.maps.Marker({position:{lat,lng},map,title:"Your guess"});
-      else marker = L.marker([lat,lng]).addTo(map).bindPopup("Your guess");
+      label.textContent = text;
+      btn.disabled = disabled;
+      btn.classList.toggle("ready", ready && !disabled);
+      clear.disabled = roundOver || submitted || timeUpSequence || (isDuo && guesses.length > 0) || !currentGuess;
     }
 
-    const pause = ms => new Promise(resolve => setTimeout(resolve,ms));
+    // ------------------------------------------------------------------
+    // Street imagery providers
+    // ------------------------------------------------------------------
     async function randomMapillaryImage() {
       if (!MAPILLARY_TOKEN) throw new Error("No Mapillary access token is configured. Add MAPILLARY_ACCESS_TOKEN in Streamlit secrets.");
       let lastApiMessage = "No images found in the sampled areas.";
-      // Mapillary's image endpoint can return HTTP 500 for dense or broad bounding boxes.
-      // Keep each box tiny, ask for few fields, and retry transient failures rather than aborting the round.
-      for (let attempt=0; attempt<24; attempt++) {
-        const [anchorLat,anchorLng] = CITY_ANCHORS[Math.floor(Math.random()*CITY_ANCHORS.length)];
+      for (let attempt = 0; attempt < 24; attempt++) {
+        const [anchorLat, anchorLng] = CITY_ANCHORS[Math.floor(Math.random() * CITY_ANCHORS.length)];
         const offset = attempt < 16 ? 0.018 : 0.04;
-        const lat = anchorLat + (Math.random()-.5)*offset;
-        const lng = anchorLng + (Math.random()-.5)*offset;
-        const pad = [0.0025,0.0035,0.0045,0.006][attempt % 4];
-        const bbox = [lng-pad,lat-pad,lng+pad,lat+pad].join(",");
+        const lat = anchorLat + (Math.random() - .5) * offset;
+        const lng = anchorLng + (Math.random() - .5) * offset;
+        const pad = [0.0025, 0.0035, 0.0045, 0.006][attempt % 4];
+        const bbox = [lng - pad, lat - pad, lng + pad, lat + pad].join(",");
         const url = new URL("https://graph.mapillary.com/images");
         url.searchParams.set("access_token", MAPILLARY_TOKEN);
         url.searchParams.set("fields", "id,geometry,is_pano");
         url.searchParams.set("bbox", bbox);
         url.searchParams.set("limit", "8");
-        // Prioritize true 360-degree captures for better free rotation.
         if (attempt < 16) url.searchParams.set("is_pano", "true");
         try {
-          const response = await fetch(url.toString(), {signal:AbortSignal.timeout(15000)});
+          const response = await fetch(url.toString(), {signal: AbortSignal.timeout(15000)});
           if (!response.ok) {
             const body = await response.text();
-            lastApiMessage = `Mapillary returned ${response.status}: ${body.slice(0,140)}`;
-            if ([429,500,502,503,504].includes(response.status)) {
-              await pause(180 + Math.min(attempt,5)*120);
-              continue;
-            }
+            lastApiMessage = `Mapillary returned ${response.status}: ${body.slice(0, 140)}`;
+            if ([429, 500, 502, 503, 504].includes(response.status)) { await pause(180 + Math.min(attempt, 5) * 120); continue; }
             throw new Error(lastApiMessage);
           }
           const payload = await response.json();
@@ -776,17 +947,17 @@
             const geometry = item.geometry || item.computed_geometry;
             const coords = geometry && geometry.coordinates;
             if (!coords || coords.length < 2) return null;
-            return {id:String(item.id),lng:Number(coords[0]),lat:Number(coords[1]),isPano:Boolean(item.is_pano)};
+            return {id:String(item.id), lng:Number(coords[0]), lat:Number(coords[1]), isPano:Boolean(item.is_pano)};
           }).filter(item => item && Number.isFinite(item.lat) && Number.isFinite(item.lng) && !seenImageIds.has(item.id));
           if (candidates.length) {
-            const choice = candidates[Math.floor(Math.random()*candidates.length)];
+            const choice = candidates[Math.floor(Math.random() * candidates.length)];
             seenImageIds.add(choice.id);
             return choice;
           }
         } catch (error) {
           if (error.name === "AbortError" || error.name === "TimeoutError" || error instanceof TypeError) {
             lastApiMessage = "Mapillary request timed out or could not connect.";
-            await pause(200 + Math.min(attempt,5)*100);
+            await pause(200 + Math.min(attempt, 5) * 100);
             continue;
           }
           throw error;
@@ -795,114 +966,56 @@
       throw new Error(`${lastApiMessage} Try again, or configure Google Street View for more reliable 360° coverage.`);
     }
     function normalizeGoogleLatLng(value) {
-      // StreetViewLocation.latLng is optional in Google's response type. Also
-      // tolerate either a google.maps.LatLng instance or a plain {lat,lng} object.
       if (!value) return null;
-      let literal = null;
+      let lat, lng;
       try {
-        if (typeof value.toJSON === "function") literal = value.toJSON();
-      } catch (error) {
-        console.warn("Could not serialize Street View coordinates:", error);
-      }
-
-      const isNumeric = candidate => candidate !== null && candidate !== undefined && candidate !== "" && Number.isFinite(Number(candidate));
-      let lat = literal?.lat;
-      let lng = literal?.lng;
-      if (!isNumeric(lat)) {
-        try { lat = typeof value.lat === "function" ? value.lat() : value.lat; }
-        catch (_) { lat = undefined; }
-      }
-      if (!isNumeric(lng)) {
-        try { lng = typeof value.lng === "function" ? value.lng() : value.lng; }
-        catch (_) { lng = undefined; }
-      }
-
-      if (!isNumeric(lat) || !isNumeric(lng)) return null;
-      lat = Number(lat);
-      lng = Number(lng);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-        return null;
-      }
+        if (typeof value.toJSON === "function") { const lit = value.toJSON(); lat = lit?.lat; lng = lit?.lng; }
+      } catch (_) {}
+      if (!Number.isFinite(Number(lat))) { try { lat = typeof value.lat === "function" ? value.lat() : value.lat; } catch (_) {} }
+      if (!Number.isFinite(Number(lng))) { try { lng = typeof value.lng === "function" ? value.lng() : value.lng; } catch (_) {} }
+      lat = Number(lat); lng = Number(lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
       return {lat, lng};
     }
-
     function requestGooglePanorama(request, timeoutMs = 5000) {
       return new Promise((resolve, reject) => {
         let finished = false;
         const timeout = setTimeout(() => {
-          if (finished) return;
-          finished = true;
+          if (finished) return; finished = true;
           reject(new Error(`Street View search timed out after ${Math.round(timeoutMs/1000)} seconds.`));
         }, timeoutMs);
-
         try {
           streetViewService.getPanorama(request, (data, status) => {
-            if (finished) return;
-            finished = true;
-            clearTimeout(timeout);
-            if (status === "OK" && data?.location?.pano) {
-              resolve(data);
-            } else if (status === "ZERO_RESULTS") {
-              reject(new Error("No Street View panorama near this sample point."));
-            } else {
-              reject(new Error(`Google Street View returned ${status || "an empty response"}.`));
-            }
+            if (finished) return; finished = true; clearTimeout(timeout);
+            if (status === "OK" && data?.location?.pano) resolve(data);
+            else if (status === "ZERO_RESULTS") reject(new Error("No Street View panorama near this sample point."));
+            else reject(new Error(`Google Street View returned ${status || "an empty response"}.`));
           });
         } catch (error) {
-          if (finished) return;
-          finished = true;
-          clearTimeout(timeout);
-          reject(error);
+          if (finished) return; finished = true; clearTimeout(timeout); reject(error);
         }
       });
     }
-
     async function randomGoogleStreetViewImage() {
-      if (!googleMapsReady || !window.google?.maps) {
-        throw new Error("Google Maps is not ready. Check your Google Maps API key and enabled Maps JavaScript API.");
-      }
+      if (!googleMapsReady || !window.google?.maps) throw new Error("Google Maps is not ready. Check your API key and that the Maps JavaScript API is enabled.");
       if (!streetViewService) streetViewService = new window.__worldGuesserGoogleLibraries.StreetViewService();
-
       const shuffledAnchors = [...CITY_ANCHORS].sort(() => Math.random() - 0.5);
       let lastProblem = "No usable panorama was returned.";
       const maxAttempts = 8;
-
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const [anchorLat, anchorLng] = shuffledAnchors[attempt % shuffledAnchors.length];
-        // Keep samples near the city anchor and search a larger radius. Avoid
-        // restricting every request to outdoor-only imagery; that unnecessarily
-        // excludes valid public Street View coverage in some cities.
         const spread = 0.025;
-        const sample = {
-          lat: anchorLat + (Math.random() - 0.5) * spread,
-          lng: anchorLng + (Math.random() - 0.5) * spread
-        };
-
-        if (currentScreen === "game") setGameStatus(`Finding a Street View location (${attempt + 1}/${maxAttempts})…`);
+        const sample = { lat: anchorLat + (Math.random() - 0.5) * spread, lng: anchorLng + (Math.random() - 0.5) * spread };
+        if (currentScreen === "game") setGameStatus(`Finding a location (${attempt + 1}/${maxAttempts})…`);
         else if (roomRole === "host") $("lobbyStatus").textContent = `Finding Street View (${attempt + 1}/${maxAttempts})…`;
-
         try {
-          // Use Google's callback API wrapped with a hard timeout. This ensures
-          // a stalled request cannot leave the round spinner running forever.
-          const data = await requestGooglePanorama({
-            location: sample,
-            radius: 5000,
-            preference: "nearest"
-          });
+          const data = await requestGooglePanorama({location: sample, radius: 5000, preference: "nearest"});
           const location = data?.location || null;
           const panoId = location?.pano;
           const point = normalizeGoogleLatLng(location?.latLng);
-
-          if (!panoId) {
-            lastProblem = "Google did not return a panorama ID.";
-            continue;
-          }
-          if (!point) {
-            lastProblem = "Google returned a panorama without valid coordinates.";
-            continue;
-          }
+          if (!panoId) { lastProblem = "Google did not return a panorama ID."; continue; }
+          if (!point) { lastProblem = "Google returned a panorama without valid coordinates."; continue; }
           if (seenImageIds.has(String(panoId))) continue;
-
           seenImageIds.add(String(panoId));
           return {id:String(panoId), lat:point.lat, lng:point.lng, isPano:true};
         } catch (error) {
@@ -911,76 +1024,111 @@
           await pause(150);
         }
       }
-      throw new Error(`Google could not find a usable Street View panorama after ${maxAttempts} bounded searches. Last result: ${lastProblem} Check that Street View is available in the selected regions and that your school network is not blocking Google Maps requests.`);
+      throw new Error(`Google could not find a usable Street View panorama after ${maxAttempts} searches. Last result: ${lastProblem}`);
     }
-    async function randomGameLocation() {
-      return USE_GOOGLE_MAPS ? randomGoogleStreetViewImage() : randomMapillaryImage();
-    }
+    async function randomGameLocation() { return USE_GOOGLE_MAPS ? randomGoogleStreetViewImage() : randomMapillaryImage(); }
+
+    // ------------------------------------------------------------------
+    // Compass strip
+    // ------------------------------------------------------------------
+    const CARDINALS = ["N","NE","E","SE","S","SW","W","NW"];
     function updateCompassHeading(heading) {
-      const normalized = ((Number(heading)||0)%360+360)%360;
-      $("compassNeedle").style.transform = `translate(-50%,-50%) rotate(${-normalized}deg)`;
-      $("compassHeading").textContent = `${String(Math.round(normalized)).padStart(3,"0")}°`;
+      const h = ((Number(heading) || 0) % 360 + 360) % 360;
+      const ppd = 2.2, half = 170, range = half / ppd + 12;
+      let html = "";
+      for (let a = Math.floor((h - range) / 15) * 15; a <= h + range; a += 15) {
+        const x = (half + (a - h) * ppd).toFixed(1);
+        const norm = ((a % 360) + 360) % 360;
+        const major = norm % 45 === 0;
+        html += `<i class="tick${major ? " major" : ""}" style="left:${x}px"></i>`;
+        if (major) html += `<b class="tlabel" style="left:${x}px">${CARDINALS[norm / 45]}</b>`;
+      }
+      $("compassTrack").innerHTML = html;
+      $("compassHeading").textContent = `${String(Math.round(h)).padStart(3, "0")}°`;
     }
 
     async function loadStreetImage(imageId) {
+      currentPanoId = String(imageId);
       if (USE_GOOGLE_MAPS) {
         if (!googleMapsReady || !window.google?.maps) throw new Error("Google Maps has not loaded. Check the API key and billing setup.");
         if (!googlePanorama) {
           googlePanorama = new window.__worldGuesserGoogleLibraries.StreetViewPanorama($("mly"), {
-            visible:true,panControl:true,zoomControl:true,linksControl:true,
-            addressControl:false,fullscreenControl:true,motionTracking:false,
-            enableCloseButton:false,clickToGoEnabled:true,scrollwheel:true
+            visible:true, panControl:false, zoomControl:false, linksControl:true,
+            addressControl:false, fullscreenControl:false, motionTracking:false, motionTrackingControl:false,
+            enableCloseButton:false, clickToGoEnabled:true, scrollwheel:true, showRoadLabels:false
           });
-        }
-        if (!googlePanorama.__worldGuesserCompassBound) {
-          googlePanorama.addListener("pov_changed",()=>updateCompassHeading(googlePanorama.getPov()?.heading || 0));
-          googlePanorama.__worldGuesserCompassBound = true;
+          googlePanorama.addListener("pov_changed", () => updateCompassHeading(googlePanorama.getPov()?.heading || 0));
         }
         googlePanorama.setPano(String(imageId));
-        googlePanorama.setPov({heading:Math.random()*360,pitch:0});
+        googlePanorama.setPov({heading: Math.random() * 360, pitch: 0});
+        googlePanorama.setZoom(1);
         updateCompassHeading(googlePanorama.getPov()?.heading || 0);
         return;
       }
       ensureMap();
-      if (!window.mapillary || !window.mapillary.Viewer) throw new Error("MapillaryJS did not load. Check whether the school network blocks unpkg.com.");
+      if (!window.mapillary || !window.mapillary.Viewer) throw new Error("MapillaryJS did not load. A network filter may be blocking unpkg.com.");
       if (!viewer) {
-        viewer = new window.mapillary.Viewer({accessToken:MAPILLARY_TOKEN,container:"mly",imageId:String(imageId)});
+        viewer = new window.mapillary.Viewer({accessToken:MAPILLARY_TOKEN, container:"mly", imageId:String(imageId)});
+        viewer.on("bearing", e => updateCompassHeading(e.bearing));
       } else {
         await viewer.moveTo(String(imageId));
       }
     }
+    function zoomView(delta) {
+      if (USE_GOOGLE_MAPS && googlePanorama) {
+        googlePanorama.setZoom(Math.max(0, Math.min(5, (googlePanorama.getZoom() || 1) + delta)));
+      } else if (viewer) {
+        viewer.getZoom().then(z => viewer.setZoom(Math.max(0, Math.min(3, z + delta)))).catch(() => {});
+      }
+    }
+    function backToStart() {
+      if (!currentPanoId) return;
+      if (USE_GOOGLE_MAPS && googlePanorama) googlePanorama.setPano(currentPanoId);
+      else if (viewer) viewer.moveTo(currentPanoId).catch(() => {});
+    }
+    function faceNorth() {
+      if (USE_GOOGLE_MAPS && googlePanorama) { googlePanorama.setPov({heading:0, pitch:0}); updateCompassHeading(0); }
+    }
 
+    // ------------------------------------------------------------------
+    // Round UI helpers
+    // ------------------------------------------------------------------
+    function setGameStatus(message) { $("gameStatusPill").textContent = message; }
+    function formatTime(seconds) {
+      const s = Math.max(0, Math.ceil(seconds));
+      return `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+    }
     function resetMapForRound() {
       ensureMap();
+      lastReveal = null;
+      setResultMode(false);
       clearMapLayers();
-      setGuessMapView(20,0,2);
-      $("clearGuessBtn").disabled = false;
+      setGuessMapView(20, 0, 2);
       $("roundResult").classList.remove("visible");
-      $("guessBtn").disabled = true;
-      $("controlHint").textContent = "Pan around the street view, then click the map to place your guess.";
+      $("controlHint").textContent = "";
+      refreshGuessBtn();
     }
     function updateTimer(seconds) {
       $("timerText").textContent = formatTime(seconds);
       const urgent = seconds <= 10;
-      $("timerDot").style.background = urgent ? "var(--red)" : "var(--green)";
-      $("timerPill").classList.toggle("urgent",urgent);
+      $("timerDot").style.background = urgent ? "#fff" : "var(--green)";
+      $("timerPill").classList.toggle("urgent", urgent);
     }
-    function showTimeUp(message="TIME'S UP") {
+    function showTimeUp(message = "TIME'S UP") {
       const overlay = $("timeUpOverlay");
       overlay.textContent = message;
       overlay.classList.remove("show");
       void overlay.offsetWidth;
       overlay.classList.add("show");
       setGameStatus(message === "TIME'S UP" ? "Time is up" : "Round complete");
-      $("guessBtn").disabled = true;
-      $("clearGuessBtn").disabled = true;
+      refreshGuessBtn();
     }
     function hideTimeUp() { $("timeUpOverlay").classList.remove("show"); }
     function startTicker() {
       clearInterval(timerHandle);
       timerHandle = setInterval(() => {
         if (roomData && (roomData.status === "playing" || roomData.status === "resolving")) {
-          const remaining = Math.max(0,(roomData.deadline || Date.now()) - Date.now())/1000;
+          const remaining = Math.max(0, (roomData.deadline || Date.now()) - Date.now()) / 1000;
           updateTimer(remaining);
           if (remaining <= 0 && !timeUpSequence) {
             timeUpSequence = true;
@@ -988,38 +1136,39 @@
             if (roomRole === "host" && roomData.status === "playing") void finalizeMultiplayerRound(1750);
           }
         } else if (!roomData && currentScreen === "game" && !soloResultVisible) {
-          const remaining = Math.max(0,soloDeadline-Date.now())/1000;
+          const remaining = Math.max(0, soloDeadline - Date.now()) / 1000;
           updateTimer(remaining);
           if (remaining <= 0 && !timeUpSequence) {
             timeUpSequence = true;
             showTimeUp("TIME'S UP");
-            pause(1750).then(()=>finishSoloRound(true));
+            pause(1750).then(() => finishSoloRound(true));
           }
         }
-      },250);
+      }, 250);
     }
-        async function startSoloGame() {
-      if (USE_GOOGLE_MAPS && !googleMapsReady) {
-        setHomeStatus("Google Maps is not ready. Check the Google Maps API key and browser console.",true); return;
-      }
-      if (!USE_GOOGLE_MAPS && !MAPILLARY_TOKEN) {
-        setHomeStatus("No street-imagery provider is configured. Add GOOGLE_MAPS_API_KEY or MAPILLARY_ACCESS_TOKEN to Streamlit secrets.",true); return;
-      }
-      if (!imageryReady()) { setHomeStatus("The selected street-imagery provider is not ready yet. Refresh and check setup status.",true); return; }
+
+    // ------------------------------------------------------------------
+    // Singleplayer
+    // ------------------------------------------------------------------
+    async function startSoloGame() {
+      if (USE_GOOGLE_MAPS && !googleMapsReady) { setHomeStatus("Google Maps is not ready yet. Check the API key, then reload the page.", true); return; }
+      if (!USE_GOOGLE_MAPS && !MAPILLARY_TOKEN) { setHomeStatus("No street-imagery provider is configured. Add GOOGLE_MAPS_API_KEY or MAPILLARY_ACCESS_TOKEN to Streamlit secrets.", true); return; }
+      if (!imageryReady()) { setHomeStatus("The street-imagery provider is not ready yet. Wait a moment and try again.", true); return; }
+      setHomeStatus("");
       getPlayerName();
       soloRounds = Number($("roundCount").value || 5);
       soloDuration = Number($("roundSeconds").value || 90);
       soloScore = 0; soloRound = 0; roomRef = null; roomData = null; roomCode = null;
       timeUpSequence = false;
       $("roundResult").classList.remove("visible");
-      $("mapDock").classList.remove("locked","dragging");
-      $("mapExpandBtn").textContent = "⤢";
-      $("modePill").textContent = "SINGLEPLAYER";
+      $("mapWrap").classList.remove("locked", "peek");
+      $("mapPinBtn").classList.remove("active");
+      $("modePill").textContent = "World";
       renderLiveLeaderboard();
       setScreen("game");
       await startSoloRound();
     }
-        async function startSoloRound() {
+    async function startSoloRound() {
       soloRound += 1; soloResultVisible = false; soloGuess = null; currentGuess = null; currentTarget = null; timeUpSequence = false;
       hideTimeUp();
       let stage = "preparing the guessing map";
@@ -1028,51 +1177,51 @@
         await ensureMapillaryAssets();
         stage = "preparing the guessing map";
         resetMapForRound();
-        $("roundPill").textContent = `ROUND ${soloRound} / ${soloRounds}`;
-        $("scorePill").textContent = `SCORE ${soloScore.toLocaleString()}`;
+        $("roundPill").textContent = `${soloRound} / ${soloRounds}`;
+        $("scorePill").textContent = soloScore.toLocaleString();
         setGameStatus("Loading a location…");
-        $("guessBtn").disabled = true;
         stage = "searching for a Street View panorama";
         const image = await randomGameLocation();
         if (!image || !image.id) throw new Error("The imagery provider returned no panorama ID.");
         const lat = Number(image.lat), lng = Number(image.lng);
         if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error("The imagery provider returned an invalid coordinate.");
-        currentTarget = {lat,lng,imageId:String(image.id)};
+        currentTarget = {lat, lng, imageId:String(image.id)};
         stage = "opening the Street View panorama";
         await loadStreetImage(image.id);
-        soloDeadline = Date.now()+soloDuration*1000;
+        soloDeadline = Date.now() + soloDuration * 1000;
         setGameStatus("Find your location");
         updateTimer(soloDuration);
-        $("clearGuessBtn").disabled = false;
+        refreshGuessBtn();
         startTicker();
       } catch (error) {
-        console.error(`Solo round failed while ${stage}:`,error);
+        console.error(`Solo round failed while ${stage}:`, error);
         const message = `Could not start the round while ${stage}: ${error?.message || String(error)}`;
-        setGameStatus("Could not load location"); notify(message,true); setScreen("home"); setHomeStatus(message,true);
+        setGameStatus("Could not load location"); notify(message, true); setScreen("home"); setHomeStatus(message, true);
       }
     }
-        async function finishSoloRound(timedOut=false) {
+    async function finishSoloRound(timedOut = false) {
       if (soloResultVisible || !currentTarget) return;
       soloResultVisible = true; timeUpSequence = true; clearInterval(timerHandle); hideTimeUp();
       const guess = soloGuess;
-      const km = guess ? distanceKm(currentTarget.lat,currentTarget.lng,guess.lat,guess.lng) : null;
+      const km = guess ? distanceKm(currentTarget.lat, currentTarget.lng, guess.lat, guess.lng) : null;
       const points = km == null ? 0 : scoreForDistance(km);
       soloScore += points;
-      drawReveal(currentTarget,guess ? [{...guess,name:getPlayerName()}] : []);
+      drawReveal(currentTarget, guess ? [{...guess, name:getPlayerName()}] : []);
       $("resultEyebrow").textContent = `ROUND ${soloRound} RESULTS`;
-      $("resultHeadline").textContent = timedOut && !guess ? "Time's up — no guess submitted" : (km <= 0.025 ? "Perfect location!" : "Location revealed");
+      $("resultHeadline").textContent = timedOut && !guess ? "Time's up — no guess submitted" : (km != null && km <= 0.025 ? "Perfect location!" : "Location revealed");
       $("resultSubline").textContent = guess ? `${km.toFixed(1)} km from the actual location` : "No pin was submitted this round.";
       $("resultScore").textContent = `${points.toLocaleString()} pts`;
-      $("resultLeaderboard").innerHTML = `<div class=\"muted small\" style=\"margin-top:8px\">Actual coordinates: ${currentTarget.lat.toFixed(5)}, ${currentTarget.lng.toFixed(5)}</div>`;
+      $("resultLeaderboard").innerHTML = `<div class="muted small" style="margin-top:8px">Actual coordinates: ${currentTarget.lat.toFixed(5)}, ${currentTarget.lng.toFixed(5)}</div>`;
       $("nextRoundBtn").textContent = soloRound >= soloRounds ? "See final score" : "Next round";
+      $("nextRoundBtn").disabled = false;
       $("nextRoundHint").textContent = "";
       $("roundResult").classList.add("visible");
-      $("scorePill").textContent = `SCORE ${soloScore.toLocaleString()}`;
+      $("scorePill").textContent = soloScore.toLocaleString();
       setGameStatus("Round complete");
-      $("guessBtn").disabled = true; $("clearGuessBtn").disabled = true;
+      refreshGuessBtn();
       renderLiveLeaderboard();
     }
-        async function submitSoloGuess() {
+    async function submitSoloGuess() {
       if (!canSubmitGuess() || !currentGuess) return;
       soloGuess = {...currentGuess};
       await finishSoloRound(false);
@@ -1082,23 +1231,26 @@
       document.body.classList.remove("game-active");
       $("finishTitle").textContent = `${getPlayerName()}, well played!`;
       $("finishTotal").textContent = soloScore.toLocaleString();
-      $("finishLeaderboard").innerHTML = `<div class=\"muted small\">${soloRounds} rounds · ${Math.round(soloScore/soloRounds).toLocaleString()} average points per round</div>`;
+      $("finishLeaderboard").innerHTML = `<div class="muted small" style="margin-top:6px">${soloRounds} rounds · ${Math.round(soloScore / soloRounds).toLocaleString()} average points per round</div>`;
       setScreen("finish");
     }
 
+    // ------------------------------------------------------------------
+    // Rooms (Duos / Multiplayer)
+    // ------------------------------------------------------------------
     function randomRoomCode() {
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
       let code = "";
-      for (let i=0;i<6;i++) code += chars[Math.floor(Math.random()*chars.length)];
+      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
       return code;
     }
     function stopRoomListeners() {
-      [unsubRoom,unsubPlayers,unsubGuesses,unsubResults,unsubTeamGuess].forEach(fn=>{if(typeof fn === "function") fn();});
+      [unsubRoom, unsubPlayers, unsubGuesses, unsubResults, unsubTeamGuess].forEach(fn => { if (typeof fn === "function") fn(); });
       unsubRoom = unsubPlayers = unsubGuesses = unsubResults = unsubTeamGuess = null;
     }
-    async function createRoom(mode="multiplayer") {
-      if (!firebaseReady) { setHomeStatus("Multiplayer needs Firebase configured in Streamlit secrets.",true); return; }
-      if (!imageryReady()) { setHomeStatus("Configure a working street-imagery provider in Streamlit secrets first.",true); return; }
+    async function createRoom(mode = "multiplayer") {
+      if (!firebaseReady) { setHomeStatus("Multiplayer needs Firebase configured in Streamlit secrets.", true); return; }
+      if (!imageryReady()) { setHomeStatus("Configure a working street-imagery provider in Streamlit secrets first.", true); return; }
       setHomeStatus(mode === "duos" ? "Creating duo room…" : "Creating multiplayer room…");
       const name = getPlayerName();
       const rounds = Number($("roundCount").value || 5);
@@ -1106,67 +1258,71 @@
       const maxPlayers = mode === "duos" ? 2 : 20;
       try {
         let code, ref, existsAlready = true;
-        for (let attempt=0;attempt<8 && existsAlready;attempt++) {
-          code = randomRoomCode(); ref = doc(db,"rooms",code); existsAlready = (await getDoc(ref)).exists();
+        for (let attempt = 0; attempt < 8 && existsAlready; attempt++) {
+          code = randomRoomCode(); ref = doc(db, "rooms", code); existsAlready = (await getDoc(ref)).exists();
         }
         if (existsAlready) throw new Error("Could not find an unused room code. Try again.");
-        await setDoc(ref,{hostUid:uid,hostName:name,status:"lobby",mode,maxPlayers,currentRound:0,totalRounds:rounds,durationSeconds:seconds,createdAt:Date.now()});
-        await setDoc(doc(ref,"players",uid),{uid,name,score:0,joinedAt:Date.now()});
-        enterRoom(code,"host");
+        await setDoc(ref, {hostUid:uid, hostName:name, status:"lobby", mode, maxPlayers, currentRound:0, totalRounds:rounds, durationSeconds:seconds, createdAt:Date.now()});
+        await setDoc(doc(ref, "players", uid), {uid, name, score:0, joinedAt:Date.now()});
+        setHomeStatus("");
+        enterRoom(code, "host");
       } catch (error) {
-        console.error(error); setHomeStatus(error.message || "Could not create room.",true);
+        console.error(error); setHomeStatus(error.message || "Could not create room.", true);
       }
     }
-        async function joinRoom() {
-      if (!firebaseReady) { setHomeStatus("Multiplayer needs Firebase configured in Streamlit secrets.",true); return; }
-      const code = ($("roomCodeInput").value || "").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
-      if (code.length !== 6) { setHomeStatus("Enter the six-character room code.",true); return; }
+    async function joinRoom() {
+      if (!firebaseReady) { setHomeStatus("Multiplayer needs Firebase configured in Streamlit secrets.", true); return; }
+      const code = ($("roomCodeInput").value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+      if (code.length !== 6) { setHomeStatus("Enter the six-character room code.", true); return; }
       setHomeStatus("Joining room…");
       try {
-        const ref = doc(db,"rooms",code);
+        const ref = doc(db, "rooms", code);
         const snap = await getDoc(ref);
         if (!snap.exists()) throw new Error("Room not found. Check the code and try again.");
         const data = snap.data();
         if (data.status !== "lobby") throw new Error("That game has already started.");
-        const playerRef = doc(ref,"players",uid);
+        const playerRef = doc(ref, "players", uid);
         const existingPlayer = await getDoc(playerRef);
-        if (existingPlayer.exists()) await updateDoc(playerRef,{name:getPlayerName()});
-        else await setDoc(playerRef,{uid,name:getPlayerName(),score:0,joinedAt:Date.now()});
-        const playersSnap = await getDocs(collection(ref,"players"));
+        if (existingPlayer.exists()) await updateDoc(playerRef, {name:getPlayerName()});
+        else await setDoc(playerRef, {uid, name:getPlayerName(), score:0, joinedAt:Date.now()});
+        const playersSnap = await getDocs(collection(ref, "players"));
         const maxPlayers = Number(data.maxPlayers || (data.mode === "duos" ? 2 : 20));
         if (playersSnap.size > maxPlayers) {
           if (!existingPlayer.exists()) await deleteDoc(playerRef);
           throw new Error(data.mode === "duos" ? "This duo room already has two players." : `This room is full (${maxPlayers} players maximum).`);
         }
-        enterRoom(code,"player");
+        setHomeStatus("");
+        enterRoom(code, "player");
       } catch (error) {
-        console.error(error); setHomeStatus(error.message || "Could not join room.",true);
+        console.error(error); setHomeStatus(error.message || "Could not join room.", true);
       }
     }
-        function enterRoom(code,role) {
+    function enterRoom(code, role) {
       stopRoomListeners();
-      roomCode = code; roomRef = doc(db,"rooms",code); roomRole = role;
-      roomData = null; players = []; guesses = []; roundResults = []; teamGuessData = null; activeRoundNo = 0; processingRound = false; timeUpSequence = false;
+      roomCode = code; roomRef = doc(db, "rooms", code); roomRole = role;
+      roomData = null; players = []; guesses = []; roundResults = []; teamGuessData = null; activeRoundNo = 0; loadedPanoRound = 0; processingRound = false; timeUpSequence = false;
       $("roomCodeDisplay").textContent = code;
       $("hostBadge").style.display = role === "host" ? "inline-flex" : "none";
       $("startRoomBtn").style.display = role === "host" ? "inline-block" : "none";
       setScreen("lobby");
       unsubRoom = onSnapshot(roomRef, snap => {
-        if (!snap.exists()) { notify("The room was closed.",true); leaveRoom(); return; }
+        if (!snap.exists()) { notify("The room was closed.", true); leaveRoom(); return; }
         roomData = snap.data();
         roomData.mode = roomData.mode || "multiplayer";
         roomData.maxPlayers = Number(roomData.maxPlayers || (roomData.mode === "duos" ? 2 : 20));
         if (roomData.hostUid === uid) roomRole = "host";
         if (roomData.status === "lobby") setScreen("lobby");
         else if (roomData.status === "finished") { renderFinishLeaderboard(); setScreen("finish"); }
-        else setScreen("game");
+        else if (currentScreen !== "game") setScreen("game");
         if (roomData.currentRound && roomData.currentRound !== activeRoundNo) attachRoundListeners(roomData.currentRound);
         renderRoom();
-        if (roomData.status === "playing" && roomData.currentRound) {
+        if (roomData.status === "playing" && roomData.currentRound && loadedPanoRound !== roomData.currentRound) {
           const r = roomData.currentRound;
-          const round = doc(db,"rooms",roomCode,"rounds",String(r));
-          getDoc(round).then(roundSnap => {
-            if (roundSnap.exists() && roundSnap.data().imageId && activeRoundNo === r) loadStreetImage(roundSnap.data().imageId).catch(err=>notify(err.message,true));
+          getDoc(doc(db, "rooms", roomCode, "rounds", String(r))).then(roundSnap => {
+            if (roundSnap.exists() && roundSnap.data().imageId && activeRoundNo === r && loadedPanoRound !== r) {
+              loadedPanoRound = r;
+              loadStreetImage(roundSnap.data().imageId).catch(err => notify(err.message, true));
+            }
           }).catch(console.error);
         }
         if (roomData.status === "resolving" && !timeUpSequence) {
@@ -1176,65 +1332,65 @@
         if (roomData.status === "playing" || roomData.status === "resolving") startTicker();
         else clearInterval(timerHandle);
       }, error => {
-        console.error("Room listener failed:",error);
-        notify("Room connection lost: " + error.message,true);
+        console.error("Room listener failed:", error);
+        notify("Room connection lost: " + error.message, true);
       });
-      unsubPlayers = onSnapshot(collection(roomRef,"players"), snap => {
-        players = snap.docs.map(d=>({id:d.id,...d.data()}));
+      unsubPlayers = onSnapshot(collection(roomRef, "players"), snap => {
+        players = snap.docs.map(d => ({id:d.id, ...d.data()}));
         renderRoom();
         if (roomData && roomData.status === "finished") renderFinishLeaderboard();
         maybeFinalizeWhenEveryoneGuessed();
       }, error => {
-        console.error("Player roster listener failed:",error);
+        console.error("Player roster listener failed:", error);
         $("lobbyStatus").textContent = "Could not load the player list: " + error.message;
-        notify("Firestore could not read the room's player list: " + error.message,true);
+        notify("Firestore could not read the room's player list: " + error.message, true);
       });
     }
     function attachRoundListeners(roundNo) {
       activeRoundNo = roundNo; processingRound = false; guesses = []; roundResults = []; teamGuessData = null; timeUpSequence = false;
       hideTimeUp();
       resetMapForRound();
-      if (unsubGuesses) unsubGuesses(); if (unsubResults) unsubResults(); if (unsubTeamGuess) unsubTeamGuess();
-      roundRef = doc(db,"rooms",roomCode,"rounds",String(roundNo));
-      unsubGuesses = onSnapshot(collection(roundRef,"guesses"),snap=>{
-        guesses = snap.docs.map(d=>({uid:d.id,...d.data()}));
+      if (unsubGuesses) unsubGuesses();
+      if (unsubResults) unsubResults();
+      if (unsubTeamGuess) unsubTeamGuess();
+      roundRef = doc(db, "rooms", roomCode, "rounds", String(roundNo));
+      unsubGuesses = onSnapshot(collection(roundRef, "guesses"), snap => {
+        guesses = snap.docs.map(d => ({uid:d.id, ...d.data()}));
         renderRoom(); maybeFinalizeWhenEveryoneGuessed();
-      },error=>{console.error("Guesses listener failed:",error);notify("Could not read guesses: "+error.message,true);});
-      unsubResults = onSnapshot(collection(roundRef,"results"),snap=>{
-        roundResults = snap.docs.map(d=>({uid:d.id,...d.data()}));
+      }, error => { console.error("Guesses listener failed:", error); notify("Could not read guesses: " + error.message, true); });
+      unsubResults = onSnapshot(collection(roundRef, "results"), snap => {
+        roundResults = snap.docs.map(d => ({uid:d.id, ...d.data()}));
         if (roundResults.length) renderMultiplayerRoundResult();
-      },error=>{console.error("Results listener failed:",error);notify("Could not read round results: "+error.message,true);});
+      }, error => { console.error("Results listener failed:", error); notify("Could not read round results: " + error.message, true); });
       if (roomData?.mode === "duos") {
-        unsubTeamGuess = onSnapshot(doc(roundRef,"teamGuess","shared"),snap=>{
+        unsubTeamGuess = onSnapshot(doc(roundRef, "teamGuess", "shared"), snap => {
           teamGuessData = snap.exists() ? snap.data() : null;
           if (teamGuessData && Number.isFinite(Number(teamGuessData.lat)) && Number.isFinite(Number(teamGuessData.lng))) {
-            currentGuess = {lat:Number(teamGuessData.lat),lng:Number(teamGuessData.lng)};
-            setGuessMarker(currentGuess.lat,currentGuess.lng);
-            if (!guesses.some(g=>g.uid===uid) && canSubmitGuess()) $("guessBtn").disabled = false;
+            currentGuess = {lat:Number(teamGuessData.lat), lng:Number(teamGuessData.lng)};
+            if (!roundResults.length) setGuessMarker(currentGuess.lat, currentGuess.lng);
             $("controlHint").textContent = `Shared team pin updated by ${teamGuessData.updatedBy === uid ? "you" : "your teammate"}.`;
-          } else if (!duoTeamGuessWriting && !guesses.some(g=>g.uid===uid)) {
-            if (marker && map) {
-              if (USE_GOOGLE_MAPS) marker.setMap(null); else map.removeLayer(marker);
-            }
-            marker = null;
+          } else if (!duoTeamGuessWriting && !guesses.some(g => g.uid === uid)) {
+            removeGuessMarker();
             currentGuess = null;
-            $("guessBtn").disabled = true;
           }
-        },error=>{console.error("Duo team pin listener failed:",error);notify("Could not sync the duo pin: "+error.message,true);});
+          refreshGuessBtn();
+        }, error => { console.error("Duo team pin listener failed:", error); notify("Could not sync the duo pin: " + error.message, true); });
       }
     }
-        function renderLiveLeaderboard() {
-      const body = $("liveLeaderboardBody");
+    function renderLiveLeaderboard() {
+      const board = $("liveLeaderboard"), body = $("liveLeaderboardBody");
       if (!body) return;
-      let rows;
-      if (roomData) rows = [...players].sort((a,b)=>(Number(b.score||0)-Number(a.score||0)) || ((a.joinedAt||0)-(b.joinedAt||0)));
-      else rows = [{uid,name:$("playerName").value || "You",score:soloScore}];
+      board.style.display = roomData ? "" : "none";
+      if (!roomData) return;
+      const rows = [...players].sort((a, b) => (Number(b.score || 0) - Number(a.score || 0)) || ((a.joinedAt || 0) - (b.joinedAt || 0)));
       $("leaderboardCount").textContent = `${rows.length} ${rows.length === 1 ? "PLAYER" : "PLAYERS"}`;
-      body.innerHTML = rows.length ? rows.map((p,i)=>`<div class="live-rank ${p.uid===uid?"me":""}"><span class="rank-no">${i+1}</span><span class="rank-name">${escapeHtml(p.name||"Player")}${p.uid===uid?" · YOU":""}</span><span class="rank-score">${Number(p.score||0).toLocaleString()}</span></div>`).join("") : `<div class="live-rank"><span class="rank-no">—</span><span class="rank-name">Waiting for players</span><span class="rank-score">0</span></div>`;
+      body.innerHTML = rows.length
+        ? rows.map((p, i) => `<div class="live-rank ${p.uid === uid ? "me" : ""}"><span class="rank-no">${i + 1}</span><span class="rank-name">${escapeHtml(p.name || "Player")}${p.uid === uid ? " · YOU" : ""}</span><span class="rank-score">${Number(p.score || 0).toLocaleString()}</span></div>`).join("")
+        : `<div class="live-rank"><span class="rank-no">—</span><span class="rank-name">Waiting for players</span><span class="rank-score">0</span></div>`;
     }
     function renderRoom() {
       if (!roomData) return;
-      const sorted = [...players].sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0));
+      const sorted = [...players].sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
       const maxPlayers = Number(roomData.maxPlayers || (roomData.mode === "duos" ? 2 : 20));
       const isDuo = roomData.mode === "duos";
       $("playerCount").textContent = `${players.length} / ${maxPlayers}`;
@@ -1242,7 +1398,7 @@
       $("roomLobbyDescription").textContent = isDuo
         ? "Invite one teammate. Both players share the same map pin and team score."
         : "Share this code with friends. Everyone gets the same location and competes for the top score.";
-      $("lobbyPlayers").innerHTML = sorted.map(p=>`<div class="player-chip"><span>${escapeHtml(p.name||"Player")}${p.uid===roomData.hostUid?" <span class='muted small'>(host)</span>":""}</span><span class="score">${Number(p.score||0).toLocaleString()}</span></div>`).join("") || "<div class='muted small'>Waiting for players…</div>";
+      $("lobbyPlayers").innerHTML = sorted.map(p => `<div class="player-chip"><span>${escapeHtml(p.name || "Player")}${p.uid === roomData.hostUid ? " <span class='muted small'>(host)</span>" : ""}</span><span class="score">${Number(p.score || 0).toLocaleString()}</span></div>`).join("") || "<div class='muted small'>Waiting for players…</div>";
       if (roomData.status === "lobby") {
         const enoughPlayers = isDuo ? players.length === 2 : players.length >= 2;
         $("lobbyStatus").textContent = roomRole !== "host" ? "Waiting for the host to start…" : (enoughPlayers ? "Everyone is here. Ready when you are." : (isDuo ? "Waiting for your teammate to join…" : "Invite at least one friend to start."));
@@ -1250,239 +1406,266 @@
         $("startRoomBtn").textContent = startingRoom ? "Loading location…" : (isDuo ? "Start duo game" : "Start game");
       }
       if (roomData.currentRound) {
-        $("roundPill").textContent = `ROUND ${roomData.currentRound} / ${roomData.totalRounds}`;
-        const myPlayer = players.find(p=>p.uid===uid);
-        $("scorePill").textContent = `SCORE ${Number(myPlayer?.score||0).toLocaleString()}`;
-        $("modePill").textContent = isDuo ? "DUOS" : `ROOM ${roomCode}`;
-        const submitted = guesses.some(g=>g.uid===uid);
+        $("roundPill").textContent = `${roomData.currentRound} / ${roomData.totalRounds}`;
+        const myPlayer = players.find(p => p.uid === uid);
+        $("scorePill").textContent = Number(myPlayer?.score || 0).toLocaleString();
+        $("modePill").textContent = isDuo ? "Duos" : `Room ${roomCode}`;
+        const submitted = guesses.some(g => g.uid === uid);
         if (roomData.status === "playing") {
           setGameStatus(submitted ? "Guess locked · waiting" : (isDuo ? "Place the shared team pin" : "Find your location"));
-          $("guessBtn").disabled = !currentGuess || submitted;
-          $("guessBtn").textContent = isDuo ? (guesses.length > 0 && !submitted ? "Confirm team guess" : "Lock team guess") : "Make guess";
-          $("clearGuessBtn").disabled = (isDuo && guesses.length > 0) || submitted;
           $("controlHint").textContent = submitted
-            ? "Your guess is locked. Waiting for your teammate."
+            ? (isDuo ? "Your guess is locked. Waiting for your teammate." : "Your guess is locked. Waiting for the others.")
             : (isDuo && guesses.length > 0
               ? "Your teammate locked the shared pin. Confirm it to submit the team guess."
               : (isDuo ? `${guesses.length} of 2 teammates locked the shared pin.` : `${guesses.length} of ${players.length} players have guessed.`));
         }
       }
       renderLiveLeaderboard();
+      refreshGuessBtn();
     }
-        function maybeFinalizeWhenEveryoneGuessed() {
+    function maybeFinalizeWhenEveryoneGuessed() {
       if (roomRole !== "host" || !roomData || roomData.status !== "playing" || players.length === 0) return;
       if (guesses.length >= players.length) void finalizeMultiplayerRound(1650);
     }
-        async function startMultiplayerRound(roundNo) {
+    async function startMultiplayerRound(roundNo) {
       if (roomRole !== "host" || !roomRef || !roomData || startingRoom) return;
-      if (roundNo > roomData.totalRounds) {
-        await updateDoc(roomRef,{status:"finished"});
-        return;
-      }
+      if (roundNo > roomData.totalRounds) { await updateDoc(roomRef, {status:"finished"}); return; }
       startingRoom = true;
       timeUpSequence = false; hideTimeUp();
       $("startRoomBtn").disabled = true;
       $("startRoomBtn").textContent = "Loading location…";
       $("lobbyStatus").textContent = "Finding a street-level location…";
-      setGameStatus("Choosing a location…");
+      if (currentScreen === "game") { setGameStatus("Choosing a location…"); $("nextRoundBtn").disabled = true; }
       try {
         await ensureMapillaryAssets();
         const image = await randomGameLocation();
-        const rRef = doc(db,"rooms",roomCode,"rounds",String(roundNo));
-        const deadline = Date.now()+roomData.durationSeconds*1000;
-        // Create the round document first, then its protected answer subdocument.
-        await setDoc(rRef,{imageId:image.id,status:"preparing",startedAt:Date.now(),deadline,durationSeconds:roomData.durationSeconds});
-        await setDoc(doc(rRef,"answer","secret"),{lat:image.lat,lng:image.lng,imageId:image.id});
-        await updateDoc(rRef,{status:"playing"});
-        await updateDoc(roomRef,{currentRound:roundNo,status:"playing",startedAt:Date.now(),deadline});
+        const rRef = doc(db, "rooms", roomCode, "rounds", String(roundNo));
+        const deadline = Date.now() + roomData.durationSeconds * 1000;
+        await setDoc(rRef, {imageId:image.id, status:"preparing", startedAt:Date.now(), deadline, durationSeconds:roomData.durationSeconds});
+        await setDoc(doc(rRef, "answer", "secret"), {lat:image.lat, lng:image.lng, imageId:image.id});
+        await updateDoc(rRef, {status:"playing"});
+        await updateDoc(roomRef, {currentRound:roundNo, status:"playing", startedAt:Date.now(), deadline});
       } catch (error) {
-        console.error("Could not start multiplayer round:",error);
+        console.error("Could not start multiplayer round:", error);
         const message = error.code === "permission-denied" || /permission/i.test(error.message)
           ? "Firestore denied a room-start write. Re-publish the updated firestore.rules file to the same Firebase project used by this app."
           : (error.message || "Could not start round.");
-        notify(message,true);
+        notify(message, true);
         $("lobbyStatus").textContent = message;
         $("startRoomBtn").disabled = false;
         $("startRoomBtn").textContent = "Try again";
+        $("nextRoundBtn").disabled = false;
       } finally {
         startingRoom = false;
       }
     }
-    async function finalizeMultiplayerRound(revealDelay=800) {
+    async function finalizeMultiplayerRound(revealDelay = 800) {
       if (roomRole !== "host" || !roomRef || !roundRef || processingRound || !roomData) return;
       if (roomData.status !== "playing" && roomData.status !== "resolving") return;
       processingRound = true;
       try {
-        if (roomData.status === "playing") await updateDoc(roomRef,{status:"resolving"});
+        if (roomData.status === "playing") await updateDoc(roomRef, {status:"resolving"});
         if (!timeUpSequence) { timeUpSequence = true; showTimeUp("ROUND COMPLETE"); }
         if (revealDelay > 0) await pause(revealDelay);
-        const answerSnap = await getDoc(doc(roundRef,"answer","secret"));
+        const answerSnap = await getDoc(doc(roundRef, "answer", "secret"));
         if (!answerSnap.exists()) throw new Error("The round's answer record is missing.");
         const answer = answerSnap.data();
-        const guessSnap = await getDocs(collection(roundRef,"guesses"));
-        const guessByUid = new Map(guessSnap.docs.map(d=>[d.id,d.data()]));
+        const guessSnap = await getDocs(collection(roundRef, "guesses"));
+        const guessByUid = new Map(guessSnap.docs.map(d => [d.id, d.data()]));
         let sharedDuoGuess = null;
         if (roomData.mode === "duos") {
-          const sharedSnap = await getDoc(doc(roundRef,"teamGuess","shared"));
+          const sharedSnap = await getDoc(doc(roundRef, "teamGuess", "shared"));
           if (sharedSnap.exists()) sharedDuoGuess = sharedSnap.data();
         }
-        const playerSnap = await getDocs(collection(roomRef,"players"));
+        const playerSnap = await getDocs(collection(roomRef, "players"));
         const batch = writeBatch(db);
         for (const playerDoc of playerSnap.docs) {
           const player = playerDoc.data();
           const guess = roomData.mode === "duos" ? sharedDuoGuess : guessByUid.get(playerDoc.id);
           const validGuess = guess && Number.isFinite(Number(guess.lat)) && Number.isFinite(Number(guess.lng)) ? guess : null;
-          const km = validGuess ? distanceKm(answer.lat,answer.lng,Number(validGuess.lat),Number(validGuess.lng)) : null;
+          const km = validGuess ? distanceKm(answer.lat, answer.lng, Number(validGuess.lat), Number(validGuess.lng)) : null;
           const roundScore = km == null ? 0 : scoreForDistance(km);
-          const totalScore = Number(player.score||0) + roundScore;
-          batch.set(doc(roundRef,"results",playerDoc.id),{
-            uid:playerDoc.id,name:player.name||"Player",
+          const totalScore = Number(player.score || 0) + roundScore;
+          batch.set(doc(roundRef, "results", playerDoc.id), {
+            uid:playerDoc.id, name:player.name || "Player",
             guessLat:validGuess ? Number(validGuess.lat) : null,
             guessLng:validGuess ? Number(validGuess.lng) : null,
-            submitted:Boolean(validGuess),distanceKm:km,roundScore,totalScore,
-            targetLat:answer.lat,targetLng:answer.lng,
+            submitted:Boolean(validGuess), distanceKm:km, roundScore, totalScore,
+            targetLat:answer.lat, targetLng:answer.lng,
             mode:roomData.mode || "multiplayer"
           });
-          batch.update(doc(roomRef,"players",playerDoc.id),{score:totalScore});
+          batch.update(doc(roomRef, "players", playerDoc.id), {score:totalScore});
         }
-        batch.update(roundRef,{status:"results",targetLat:answer.lat,targetLng:answer.lng,finishedAt:Date.now()});
-        // Keep the room in RESULTS even on the final round. The last round's
-        // results must render before the host is allowed to finish the game.
-        batch.update(roomRef,{status:"results",resultsReadyAt:Date.now()});
+        batch.update(roundRef, {status:"results", targetLat:answer.lat, targetLng:answer.lng, finishedAt:Date.now()});
+        batch.update(roomRef, {status:"results", resultsReadyAt:Date.now()});
         await batch.commit();
         hideTimeUp();
         renderLiveLeaderboard();
       } catch (error) {
-        console.error(error); notify("Could not score this round: "+error.message,true);
+        console.error(error); notify("Could not score this round: " + error.message, true);
         processingRound = false;
       }
     }
-        async function submitMultiplayerGuess() {
+    async function submitMultiplayerGuess() {
       if (!canSubmitGuess() || !currentGuess || !roundRef) return;
       try {
         $("guessBtn").disabled = true;
         if (roomData?.mode === "duos") await duoTeamGuessWritePromise;
         if (!canSubmitGuess()) return;
         const guess = {...currentGuess};
-        await setDoc(doc(roundRef,"guesses",uid),{lat:guess.lat,lng:guess.lng,guessedAt:Date.now()});
+        await setDoc(doc(roundRef, "guesses", uid), {lat:guess.lat, lng:guess.lng, guessedAt:Date.now()});
         setGameStatus(roomData?.mode === "duos" ? "Team guess locked · waiting" : "Guess submitted · waiting");
       } catch (error) {
-        console.error(error); $("guessBtn").disabled = false; notify("Could not submit guess: "+error.message,true);
+        console.error(error); refreshGuessBtn(); notify("Could not submit guess: " + error.message, true);
       }
     }
-        function renderMultiplayerRoundResult() {
+    function renderMultiplayerRoundResult() {
       if (!roundResults.length || !roomData) return;
       const first = roundResults[0];
-      const target = {lat:Number(first.targetLat),lng:Number(first.targetLng)};
+      const target = {lat:Number(first.targetLat), lng:Number(first.targetLng)};
       if (!Number.isFinite(target.lat) || !Number.isFinite(target.lng)) return;
-      const sorted = [...roundResults].sort((a,b)=>(b.roundScore||0)-(a.roundScore||0));
-      const mine = roundResults.find(r=>r.uid===uid);
-      drawReveal(target,sorted.map(r=>({lat:r.guessLat,lng:r.guessLng,name:r.name})));
+      const sorted = [...roundResults].sort((a, b) => (b.roundScore || 0) - (a.roundScore || 0));
+      const mine = roundResults.find(r => r.uid === uid);
+      drawReveal(target, sorted.map(r => ({lat:r.guessLat, lng:r.guessLng, name:r.name})));
       $("roundResult").classList.add("visible");
       const isDuo = roomData.mode === "duos";
       $("resultEyebrow").textContent = `ROUND ${roomData.currentRound} RESULTS`;
       $("resultHeadline").textContent = isDuo
-        ? (mine?.submitted ? `Your team was ${(mine.distanceKm||0).toFixed(1)} km away` : "Your team did not place a pin")
-        : (mine && mine.submitted ? `${(mine.distanceKm||0).toFixed(1)} km away` : "You did not submit a guess");
+        ? (mine?.submitted ? `Your team was ${(mine.distanceKm || 0).toFixed(1)} km away` : "Your team did not place a pin")
+        : (mine && mine.submitted ? `${(mine.distanceKm || 0).toFixed(1)} km away` : "You did not submit a guess");
       $("resultSubline").textContent = isDuo
-        ? `Shared team result · ${roundResults.length} teammates · actual location ${target.lat.toFixed(4)}, ${target.lng.toFixed(4)}`
+        ? `Shared team result · ${roundResults.length} teammates`
         : `${roundResults.length} players · actual location ${target.lat.toFixed(4)}, ${target.lng.toFixed(4)}`;
-      $("resultScore").textContent = `${Number(mine?.roundScore||0).toLocaleString()} pts`;
-      $("resultLeaderboard").innerHTML = `<table class=\"leaderboard\"><thead><tr><th>${isDuo?"Teammate":"Player"}</th><th>Distance</th><th>Round</th><th>Total</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${escapeHtml(r.name)}</td><td>${r.distanceKm==null?"—":r.distanceKm.toFixed(1)+" km"}</td><td>${Number(r.roundScore||0).toLocaleString()}</td><td>${Number(r.totalScore||0).toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
+      $("resultScore").textContent = `${Number(mine?.roundScore || 0).toLocaleString()} pts`;
+      $("resultLeaderboard").innerHTML = `<table class="leaderboard"><thead><tr><th>${isDuo ? "Teammate" : "Player"}</th><th>Distance</th><th>Round</th><th>Total</th></tr></thead><tbody>${sorted.map(r => `<tr><td>${escapeHtml(r.name)}</td><td>${r.distanceKm == null ? "—" : r.distanceKm.toFixed(1) + " km"}</td><td>${Number(r.roundScore || 0).toLocaleString()}</td><td>${Number(r.totalScore || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
       $("nextRoundBtn").textContent = roomData.currentRound >= roomData.totalRounds ? "Finish game" : "Next round";
       $("nextRoundBtn").disabled = roomRole !== "host";
       $("nextRoundHint").textContent = roomRole === "host" ? "The host controls what happens next." : "Waiting for the host to continue…";
-      $("guessBtn").disabled = true; $("clearGuessBtn").disabled = true;
       setGameStatus("Round complete");
+      refreshGuessBtn();
       renderLiveLeaderboard();
     }
-        function renderFinishLeaderboard() {
-      const sorted = [...players].sort((a,b)=>(Number(b.score||0)-Number(a.score||0)));
-      const mine = sorted.find(p=>p.uid===uid);
+    function renderFinishLeaderboard() {
+      const sorted = [...players].sort((a, b) => (Number(b.score || 0) - Number(a.score || 0)));
+      const mine = sorted.find(p => p.uid === uid);
       $("finishTitle").textContent = roomCode ? `${roomData?.mode === "duos" ? "Duos" : "Room"} ${roomCode} · game complete` : "Game complete";
-      $("finishTotal").textContent = Number(mine?.score||0).toLocaleString();
-      $("finishLeaderboard").innerHTML = `<table class=\"leaderboard\"><thead><tr><th>Rank</th><th>Player</th><th>Total points</th></tr></thead><tbody>${sorted.map((p,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(p.name||"Player")}${p.uid===roomData?.hostUid?" (host)":""}</td><td>${Number(p.score||0).toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
+      $("finishTotal").textContent = Number(mine?.score || 0).toLocaleString();
+      $("finishLeaderboard").innerHTML = `<table class="leaderboard"><thead><tr><th>Rank</th><th>Player</th><th>Total points</th></tr></thead><tbody>${sorted.map((p, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(p.name || "Player")}${p.uid === roomData?.hostUid ? " (host)" : ""}</td><td>${Number(p.score || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
     }
-        async function advanceMultiplayer() {
+    async function advanceMultiplayer() {
       if (roomRole !== "host" || !roomData) return;
-      if (roomData.currentRound >= roomData.totalRounds) await updateDoc(roomRef,{status:"finished"});
-      else await startMultiplayerRound(roomData.currentRound+1);
+      if (roomData.currentRound >= roomData.totalRounds) await updateDoc(roomRef, {status:"finished"});
+      else await startMultiplayerRound(roomData.currentRound + 1);
     }
     function leaveRoom() {
       clearInterval(timerHandle); stopRoomListeners();
       roomRef = null; roomCode = null; roomData = null; players = []; guesses = []; roundResults = []; roundRef = null; roomRole = "player";
+      renderLiveLeaderboard();
       setScreen("home");
     }
 
-    $("soloBtn").addEventListener("click",startSoloGame);
-    $("createDuoBtn").addEventListener("click",()=>createRoom("duos"));
-    $("createRoomBtn").addEventListener("click",()=>createRoom("multiplayer"));
-    $("joinRoomBtn").addEventListener("click",joinRoom);
-    $("roomCodeInput").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);});
-    $("startRoomBtn").addEventListener("click",()=>startMultiplayerRound(1).catch(error=>notify(error.message,true)));
-    $("copyRoomCodeBtn").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(roomCode);notify("Room code copied.");}catch{notify("Room code: "+roomCode);}});
-    $("leaveRoomBtn").addEventListener("click",leaveRoom);
-    $("mapExpandBtn").addEventListener("click",event=>{
-      event.stopPropagation();
-      const dock = $("mapDock");
-      dock.classList.toggle("locked");
-      if (dock.classList.contains("locked")) dock.classList.remove("dragging");
-      $("mapExpandBtn").textContent = dock.classList.contains("locked") ? "−" : "⤢";
-      setTimeout(refreshMapSize,240);
+    // ------------------------------------------------------------------
+    // Event wiring
+    // ------------------------------------------------------------------
+    $("soloBtn").addEventListener("click", startSoloGame);
+    $("createDuoBtn").addEventListener("click", () => createRoom("duos"));
+    $("createRoomBtn").addEventListener("click", () => createRoom("multiplayer"));
+    $("joinMenuBtn").addEventListener("click", () => { setHomeStatus(""); openModal("joinModal"); setTimeout(() => $("roomCodeInput").focus(), 50); });
+    $("joinRoomBtn").addEventListener("click", joinRoom);
+    $("roomCodeInput").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); });
+    $("roomCodeInput").addEventListener("keydown", e => { if (e.key === "Enter") joinRoom(); });
+    $("openSettingsBtn").addEventListener("click", () => openModal("settingsModal"));
+    $("openSettingsBtn2").addEventListener("click", () => openModal("settingsModal"));
+    $("openHelpBtn").addEventListener("click", () => openModal("helpModal"));
+    document.querySelectorAll("[data-close-modal]").forEach(b => b.addEventListener("click", closeModals));
+    document.querySelectorAll(".modal-backdrop").forEach(m => m.addEventListener("pointerdown", e => { if (e.target === m) closeModals(); }));
+    window.addEventListener("keydown", e => { if (e.key === "Escape") closeModals(); });
+    $("roundCount").addEventListener("change", updateSettingsSummary);
+    $("roundSeconds").addEventListener("change", updateSettingsSummary);
+    $("playerName").addEventListener("change", getPlayerName);
+
+    $("startRoomBtn").addEventListener("click", () => startMultiplayerRound(1).catch(error => notify(error.message, true)));
+    $("copyRoomCodeBtn").addEventListener("click", async () => { try { await navigator.clipboard.writeText(roomCode); notify("Room code copied."); } catch { notify("Room code: " + roomCode); } });
+    $("leaveRoomBtn").addEventListener("click", leaveRoom);
+
+    $("zoomInBtn").addEventListener("click", () => zoomView(1));
+    $("zoomOutBtn").addEventListener("click", () => zoomView(-1));
+    $("backStartBtn").addEventListener("click", backToStart);
+    $("northBtn").addEventListener("click", faceNorth);
+
+    const mapWrap = $("mapWrap");
+    function applyMapLevel() {
+      mapWrap.classList.remove("lvl2", "lvl3");
+      if (mapLevel > 1) mapWrap.classList.add("lvl" + mapLevel);
+      [260, 500].forEach(ms => setTimeout(refreshMapSize, ms));
+    }
+    $("mapGrowBtn").addEventListener("click", () => { mapLevel = Math.min(3, mapLevel + 1); applyMapLevel(); });
+    $("mapShrinkBtn").addEventListener("click", () => { mapLevel = Math.max(1, mapLevel - 1); applyMapLevel(); });
+    $("mapPinBtn").addEventListener("click", () => {
+      const locked = mapWrap.classList.toggle("locked");
+      $("mapPinBtn").classList.toggle("active", locked);
+      [260, 500].forEach(ms => setTimeout(refreshMapSize, ms));
     });
-    $("clearGuessBtn").addEventListener("click",async()=>{
-      if (roomData && guesses.some(g=>g.uid===uid)) return;
-      if (roomData?.mode === "duos" && guesses.length > 0) {
-        notify("Your teammate has already locked the shared guess."); return;
-      }
+    // On touch screens there is no hover: a tap on the mini map peeks it open.
+    $("mapDock").addEventListener("pointerdown", e => { if (e.pointerType !== "mouse") mapWrap.classList.add("peek"); });
+    $("gameStage").addEventListener("pointerdown", e => { if (!mapWrap.contains(e.target)) mapWrap.classList.remove("peek"); });
+    mapWrap.addEventListener("transitionend", refreshMapSize);
+    $("mapDock").addEventListener("transitionend", refreshMapSize);
+
+    $("clearGuessBtn").addEventListener("click", async () => {
+      if (roomData && guesses.some(g => g.uid === uid)) return;
+      if (roomData?.mode === "duos" && guesses.length > 0) { notify("Your teammate has already locked the shared guess."); return; }
       if (roomData?.mode === "duos" && roundRef) {
-        try { await deleteDoc(doc(roundRef,"teamGuess","shared")); } catch (error) { notify("Could not clear shared pin: "+error.message,true); }
+        try { await deleteDoc(doc(roundRef, "teamGuess", "shared")); } catch (error) { notify("Could not clear shared pin: " + error.message, true); }
       }
-      if (marker && map) {
-        if (USE_GOOGLE_MAPS) marker.setMap(null); else map.removeLayer(marker);
-      }
-      marker = null; currentGuess = null; teamGuessData = null;
-      $("guessBtn").disabled = true;
+      removeGuessMarker();
+      currentGuess = null; teamGuessData = null;
       $("controlHint").textContent = "Pin cleared. Click the map to place a new guess.";
+      refreshGuessBtn();
     });
-        $("guessBtn").addEventListener("click",()=>roomData?submitMultiplayerGuess():submitSoloGuess());
-    $("nextRoundBtn").addEventListener("click",()=>{
-      if (roomData) advanceMultiplayer().catch(err=>notify(err.message,true));
+    $("guessBtn").addEventListener("click", () => roomData ? submitMultiplayerGuess() : submitSoloGuess());
+    window.addEventListener("keydown", e => {
+      if (e.key === "Enter" && currentScreen === "game" && !$("guessBtn").disabled && document.activeElement?.tagName !== "BUTTON") $("guessBtn").click();
+    });
+    $("nextRoundBtn").addEventListener("click", () => {
+      if (roomData) advanceMultiplayer().catch(err => notify(err.message, true));
       else if (soloRound >= soloRounds) finishSoloGame();
       else startSoloRound();
     });
-    $("homeBtn").addEventListener("click",()=>{leaveRoom();setScreen("home");});
+    $("homeBtn").addEventListener("click", () => { leaveRoom(); setScreen("home"); });
 
-    const savedName = localStorage.getItem("worldGuesserName") || localStorage.getItem("crossroadsGeoName");
-    if (savedName) $("playerName").value = savedName;
-    showSetupStatus();
-    renderLiveLeaderboard();
-    // Initialize the selected map/imagery provider before enabling game buttons.
-    // Firebase is deliberately initialized afterward and without blocking the
-    // page: solo play does not depend on Firebase authentication.
-    if (GOOGLE_MAPS_API_KEY) {
-      try {
-        await loadGoogleMapsApi();
-        googleMapsReady = true;
-      } catch (error) {
-        console.error("Google Maps API failed to load:",error);
-        setHomeStatus("Google Maps failed to load. Check that Maps JavaScript API is enabled, billing is active, and the key allows this Streamlit domain. " + error.message,true);
+    // ------------------------------------------------------------------
+    // Boot. Nothing here may block solo play: Firebase and the globe load in parallel.
+    // ------------------------------------------------------------------
+    async function boot() {
+      const savedName = store.get("worldGuesserName") || store.get("crossroadsGeoName");
+      if (savedName) $("playerName").value = savedName;
+      const savedRounds = store.get("worldGuesserRounds"), savedSeconds = store.get("worldGuesserSeconds");
+      if (savedRounds && [...$("roundCount").options].some(o => o.value === savedRounds)) $("roundCount").value = savedRounds;
+      if (savedSeconds && [...$("roundSeconds").options].some(o => o.value === savedSeconds)) $("roundSeconds").value = savedSeconds;
+      updateSettingsSummary();
+      updateCompassHeading(0);
+      showSetupStatus();
+      renderLiveLeaderboard();
+      void initGlobe();
+      void initializeFirebase();
+
+      if (GOOGLE_MAPS_API_KEY) {
+        try { await loadGoogleMapsApi(); googleMapsReady = true; }
+        catch (error) {
+          console.error("Google Maps API failed to load:", error);
+          setHomeStatus("Google Maps failed to load: " + error.message, true);
+        }
+      } else if (MAPILLARY_TOKEN) {
+        try { await ensureMapillaryAssets(); }
+        catch (error) {
+          console.error("Mapillary/Leaflet initialization failed:", error);
+          setHomeStatus("Mapillary could not load: " + error.message, true);
+        }
       }
-    } else if (MAPILLARY_TOKEN) {
-      try {
-        await ensureMapillaryAssets();
-      } catch (error) {
-        console.error("Mapillary/Leaflet initialization failed:", error);
-        setHomeStatus("Mapillary could not load: " + error.message, true);
-      }
+      showSetupStatus();
     }
-    if (USE_GOOGLE_MAPS) {
-      document.querySelectorAll(".attribution").forEach(el => {
-        el.textContent = "Google Maps · Street View imagery provided by Google.";
-      });
-    }
-    showSetupStatus();
-    void initializeFirebase();
+    boot();
   </script>
 </body>
 </html>
