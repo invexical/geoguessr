@@ -59,7 +59,7 @@ if not game_path.is_file():
 
 config_json = json.dumps(config, ensure_ascii=False, separators=(",", ":"))
 fragment = urlencode({"config": config_json})
-iframe_url = f"/app/static/game.html#{fragment}"
+iframe_url = f"/app/game.html#{fragment}"
 
 st.iframe(
     iframe_url,
