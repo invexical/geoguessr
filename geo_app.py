@@ -29,6 +29,25 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ---------------------------------------------------------------------------
+# Guard: /app/static/* only exists when static serving is switched on.
+# If it is off, Streamlit answers that URL with its own app shell, so the
+# iframe would load Streamlit inside itself and spin forever.
+# ---------------------------------------------------------------------------
+if not st.get_option("server.enableStaticServing"):
+    st.error(
+        "Static file serving is turned off, so the game page cannot be loaded.\n\n"
+        "Create `.streamlit/config.toml` in your repository with:\n\n"
+        "```toml\n[server]\nenableStaticServing = true\n```\n\n"
+        "Then reboot the app (this setting is only read at server start)."
+    )
+    st.stop()
+
+game_path = ROOT / "static" / "game.html"
+if not game_path.is_file():
+    st.error("static/game.html was not found. Keep the static folder beside this file.")
+    st.stop()
+
 # Browser-side provider keys are visible to visitors. Restrict the Google key
 # by HTTP referrer and API in Google Cloud; Firebase writes are protected by rules.
 mapillary_token = str(st.secrets.get("MAPILLARY_ACCESS_TOKEN", "")).strip()
@@ -50,20 +69,16 @@ config = {
     },
 }
 
-# Keep this as a real static HTTPS document. Do NOT inline the HTML in st.iframe:
-# that creates an about:srcdoc document, which breaks Google HTTP-referrer restrictions.
-game_path = ROOT / "static" / "game.html"
-if not game_path.is_file():
-    st.error("static/game.html was not found. Keep the static folder beside this file.")
-    st.stop()
-
 config_json = json.dumps(config, ensure_ascii=False, separators=(",", ":"))
 fragment = urlencode({"config": config_json})
 iframe_url = f"/app/static/game.html#{fragment}"
 
-st.iframe(
-    iframe_url,
-    height=850,
-    width="stretch",
-    alt="World Guesser interactive geography game",
-)
+# Keep this as a real same-origin document (not inline HTML / srcdoc) so Google's
+# HTTP-referrer key restrictions see your streamlit.app URL.
+# st.iframe has no `alt` argument; passing one raises a TypeError.
+if hasattr(st, "iframe"):
+    st.iframe(iframe_url, height=850, width="stretch")
+else:  # older Streamlit releases
+    import streamlit.components.v1 as components
+
+    components.iframe(iframe_url, height=850)
