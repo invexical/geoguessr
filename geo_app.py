@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
-from urllib.parse import urlencode
 
 import streamlit as st
 
@@ -29,27 +29,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------------------------------------------------------------------------
-# Guard: /app/static/* only exists when static serving is switched on.
-# If it is off, Streamlit answers that URL with its own app shell, so the
-# iframe would load Streamlit inside itself and spin forever.
-# ---------------------------------------------------------------------------
-if not st.get_option("server.enableStaticServing"):
-    st.error(
-        "Static file serving is turned off, so the game page cannot be loaded.\n\n"
-        "Create `.streamlit/config.toml` in your repository with:\n\n"
-        "```toml\n[server]\nenableStaticServing = true\n```\n\n"
-        "Then reboot the app (this setting is only read at server start)."
-    )
-    st.stop()
-
-game_path = ROOT / "static" / "game.html"
-if not game_path.is_file():
-    st.error("static/game.html was not found. Keep the static folder beside this file.")
-    st.stop()
-
-# Browser-side provider keys are visible to visitors. Restrict the Google key
-# by HTTP referrer and API in Google Cloud; Firebase writes are protected by rules.
+# Browser-side keys are visible to users. Restrict Google keys by HTTP referrer
+# and API; protect Firebase writes with firestore.rules.
 mapillary_token = str(st.secrets.get("MAPILLARY_ACCESS_TOKEN", "")).strip()
 google_maps_api_key = str(st.secrets.get("GOOGLE_MAPS_API_KEY", "")).strip()
 try:
@@ -69,16 +50,29 @@ config = {
     },
 }
 
-config_json = json.dumps(config, ensure_ascii=False, separators=(",", ":"))
-fragment = urlencode({"config": config_json})
-iframe_url = f"/app/static/game.html#{fragment}"
+# game.html may live in static/ (current repo layout) or next to this file.
+html_path = next(
+    (p for p in (ROOT / "static" / "game.html", ROOT / "game.html") if p.is_file()),
+    None,
+)
+if html_path is None:
+    st.error("game.html was not found. Put it in the static/ folder (or beside geo_app.py).")
+    st.stop()
 
-# Keep this as a real same-origin document (not inline HTML / srcdoc) so Google's
-# HTTP-referrer key restrictions see your streamlit.app URL.
-# st.iframe has no `alt` argument; passing one raises a TypeError.
-if hasattr(st, "iframe"):
-    st.iframe(iframe_url, height=850, width="stretch")
-else:  # older Streamlit releases
-    import streamlit.components.v1 as components
+html = html_path.read_text(encoding="utf-8")
 
-    components.iframe(iframe_url, height=850)
+# Inject the config as base64 so quotes, "</script>" or unicode in a secret can
+# never break the page. This is the same inline approach that worked before; it
+# does not depend on Streamlit static file serving or on any URL path.
+placeholder = "__APP_CONFIG_B64__"
+if placeholder not in html:
+    st.error(
+        f"{html_path.name} does not contain the {placeholder} placeholder. "
+        "Make sure you uploaded the newest game.html."
+    )
+    st.stop()
+
+config_b64 = base64.b64encode(json.dumps(config, ensure_ascii=False).encode("utf-8")).decode("ascii")
+html = html.replace(placeholder, config_b64)
+
+st.iframe(html, height=1080, width="stretch")
