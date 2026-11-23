@@ -400,20 +400,53 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <!-- Startup diagnostics: any uncaught error is shown on screen, and a watchdog
+       reports if the main game script never started (e.g. a blocked or broken import). -->
+  <div id="wgDiag" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;max-width:760px;margin:0 auto;padding:12px 14px;border-radius:12px;background:#4a1020;border:1px solid #ff6a80;color:#fff;font:13px/1.5 system-ui,sans-serif;white-space:pre-wrap;word-break:break-word"></div>
+  <script>
+    (function () {
+      var box = document.getElementById("wgDiag");
+      function show(msg) { box.style.display = "block"; box.textContent += (box.textContent ? "\n\n" : "") + msg; }
+      window.addEventListener("error", function (e) {
+        show("Script error: " + (e.message || "unknown") + (e.filename ? "\n(" + e.filename + ":" + e.lineno + ")" : ""));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e.reason; show("Unhandled error: " + ((r && r.message) || r));
+      });
+      setTimeout(function () {
+        if (!window.__wgBooted) show("The game script has not started after 8 seconds. Open the browser console (F12), switch the context dropdown from \"top\" to this frame, and look for the first red error.");
+      }, 8000);
+    })();
+  </script>
+
   <script type="module">
     // ------------------------------------------------------------------
     // Configuration (passed from Streamlit in the URL hash)
     // ------------------------------------------------------------------
+    // Two ways to receive the config:
+    //  1) inline embedding: geo_app.py replaces the placeholder below with base64 JSON
+    //  2) static-URL embedding: JSON in the URL hash (#config=...)
     function readAppConfig() {
-      const serialized = new URLSearchParams(window.location.hash.slice(1)).get("config");
-      if (!serialized) return {};
-      try {
-        const parsed = JSON.parse(serialized);
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch (error) {
-        console.error("World Guesser could not parse its app configuration:", error);
-        return {};
+      const parse = (text, label) => {
+        try {
+          const parsed = JSON.parse(text);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+          console.error(`World Guesser could not parse its app configuration (${label}):`, error);
+          return null;
+        }
+      };
+      const injected = "__APP_CONFIG_B64__";
+      if (injected && !injected.startsWith("__")) {
+        try {
+          const bytes = Uint8Array.from(atob(injected), c => c.charCodeAt(0));
+          const fromInline = parse(new TextDecoder().decode(bytes), "inline");
+          if (fromInline) return fromInline;
+        } catch (error) { console.error("Could not decode the injected configuration:", error); }
       }
+      const serialized = new URLSearchParams(window.location.hash.slice(1)).get("config");
+      if (serialized) return parse(serialized, "url hash") || {};
+      return {};
     }
     const CONFIG = readAppConfig();
     const MAPILLARY_TOKEN = CONFIG.mapillaryToken || "";
@@ -1638,6 +1671,7 @@
     // Boot. Nothing here may block solo play: Firebase and the globe load in parallel.
     // ------------------------------------------------------------------
     async function boot() {
+      window.__wgBooted = true;
       const savedName = store.get("worldGuesserName") || store.get("crossroadsGeoName");
       if (savedName) $("playerName").value = savedName;
       const savedRounds = store.get("worldGuesserRounds"), savedSeconds = store.get("worldGuesserSeconds");
